@@ -26,6 +26,7 @@ def generate_image(text):
         quality="standard",
         n=1,
     )
+    return response.data[0].url
 
 def generate_question(prompt):
     print("Prompt:", prompt)  # Debugging print
@@ -38,13 +39,15 @@ def generate_question(prompt):
         output = f"Question:\n{question}\n\n"
 
         image_prompt = f"Generate an image illustrating the following question:\n{question}"
-        image_url = generate_image(image_prompt)
+        with st.spinner('Generating Thumbnail...'):
+            image_url = generate_image(image_prompt)
         output += f"Image: {image_url}\n\nAnswers:\n"
 
         for i, option in enumerate(answer_options):
             output += f"{chr(65+i)}. {option.strip()}\n"
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
-            image_url = generate_image(image_prompt)
+            with st.spinner('Generating Thumbnail...'):
+                image_url = generate_image(image_prompt)
             output += f"Image: {image_url}\n\n"
 
     elif "scenario image" in prompt.lower():
@@ -55,13 +58,15 @@ def generate_question(prompt):
         output = f"Question:\n{question}\n\n"
 
         image_prompt = f"Generate an image illustrating the scenario described in the following question:\n{question}"
-        image_url = generate_image(image_prompt)
+        with st.spinner('Generating Thumbnail...'):
+            image_url = generate_image(image_prompt)
         output += f"Image: {image_url}\n\nAnswers:\n"
 
         for i, option in enumerate(answer_options):
             output += f"{chr(65+i)}. {option.strip()}\n"
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
-            image_url = generate_image(image_prompt)
+            with st.spinner('Generating Thumbnail...'):
+                image_url = generate_image(image_prompt)
             output += f"Image: {image_url}\n\n"
 
     else:
@@ -79,7 +84,8 @@ def generate_question(prompt):
 
         for i, option in enumerate(answer_options):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
-            image_url = generate_image(image_prompt)
+            with st.spinner('Generating Thumbnail...'):
+                image_url = generate_image(image_prompt)
             output += f"{chr(65+i)}. {option.strip()}\n"
             output += f"Image: {image_url}\n\n"
 
