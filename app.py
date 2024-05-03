@@ -19,6 +19,19 @@ def generate_image(text):
         st.error("OpenAI API key is not set. Please set it in your environment variables.")
         return
 
+    try:
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=text,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+        return response.data[0].url
+    except Exception as e:
+        st.error(f"Error generating image: {e}")
+        return None
+
     response = client.images.generate(
         model="dall-e-3",
         prompt=text,
