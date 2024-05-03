@@ -1,9 +1,6 @@
 import streamlit as st
 from openai import OpenAI
 import os
-from PIL import Image as PILImage
-from io import BytesIO
-import requests
 
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY")  # Used in production
 client = OpenAI(api_key=api_key)
@@ -16,6 +13,11 @@ def get_completion(prompt, model="gpt-3.5-turbo", max_tokens=200):
         max_tokens=max_tokens
     )
     return response.choices[0].message.content.strip()
+
+def generate_image(prompt: str):
+    # Placeholder function for generating image URLs
+    # Replace this with your actual implementation
+    return "https://example.com/image.png"
 
 def generate_question(prompt):
     if "plain text" in prompt.lower() and "image" in prompt.lower():
@@ -72,7 +74,6 @@ def generate_question(prompt):
             output += f"Image: {image_url}\n\n"
 
     return output
-    
 
 def main():
     st.title("Cybersecurity Question Generator")
