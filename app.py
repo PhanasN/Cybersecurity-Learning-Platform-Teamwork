@@ -1,7 +1,6 @@
 import streamlit as st
 from openai import OpenAI
 import os
-from IPython.display import Image, display
 from PIL import Image as PILImage
 from io import BytesIO
 import requests
