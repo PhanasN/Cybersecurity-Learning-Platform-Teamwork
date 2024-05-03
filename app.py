@@ -82,13 +82,13 @@ def generate_question(prompt):
     return output
 
 def main():
-    print("Cybersecurity Question Generator")
-    prompt = input("Enter a prompt to generate the desired output: ")
+    st.title("Cybersecurity Question Generator")
+    prompt = st.text_input("Enter a prompt to generate the desired output:")
 
-    output = generate_question(prompt)
-
-    print("\nGenerated Output:")
-    print(output)
+    if st.button("Generate Output"):
+        output = generate_question(prompt)
+        st.subheader("Generated Output:")
+        st.text(output)
 
 if __name__ == "__main__":
     main()
