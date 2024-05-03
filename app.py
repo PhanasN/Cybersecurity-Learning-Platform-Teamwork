@@ -38,12 +38,6 @@ def generate_question(prompt):
 
         output = f"Question:\n{question}\n\n"
 
-        image_prompt = f"Generate an image illustrating the following question:\n{question}"
-        with st.spinner('Generating Thumbnail...'):
-            image_url = generate_image(image_prompt)
-        st.image(image_url, use_column_width=True)
-        output += f"Image:\n"
-
         for i, option in enumerate(answer_options):
             output += f"{chr(65+i)}. {option.strip()}\n"
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
@@ -58,12 +52,6 @@ def generate_question(prompt):
         answer_options = answer_options.split("\n")
 
         output = f"Question:\n{question}\n\n"
-
-        image_prompt = f"Generate an image illustrating the scenario described in the following question:\n{question}"
-        with st.spinner('Generating Thumbnail...'):
-            image_url = generate_image(image_prompt)
-        st.image(image_url, use_column_width=True)
-        output += f"Image:\n"
 
         for i, option in enumerate(answer_options):
             output += f"{chr(65+i)}. {option.strip()}\n"
