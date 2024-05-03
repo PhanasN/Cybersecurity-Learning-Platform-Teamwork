@@ -10,7 +10,7 @@ client = OpenAI(api_key=api_key)
 
 def get_completion(prompt, model="gpt-3.5-turbo", max_tokens=200):
     messages = [{"role": "user", "content": prompt}]
-    response = openai.chat.completions.create(
+    response = client.chat.completions.create(
         model=model,
         messages=messages,
         max_tokens=max_tokens
