@@ -40,11 +40,12 @@ def generate_question(prompt):
 
         for i, option in enumerate(answer_options):
             output += f"{chr(65+i)}. {option.strip()}\n"
+            output += "[AI GENERATED IMAGE]\n\n"
+
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
-            with st.spinner('Generating Thumbnail...'):
+            with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
-            st.image(image_url, use_column_width=True)
-            output += f"Image:\n"
+            output = output.replace("[AI GENERATED IMAGE]", f"![AI GENERATED IMAGE]({image_url})")
 
     elif "scenario image" in prompt.lower():
         question = get_completion(prompt)
@@ -55,11 +56,12 @@ def generate_question(prompt):
 
         for i, option in enumerate(answer_options):
             output += f"{chr(65+i)}. {option.strip()}\n"
+            output += "[AI GENERATED IMAGE]\n\n"
+
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
-            with st.spinner('Generating Thumbnail...'):
+            with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
-            st.image(image_url, use_column_width=True)
-            output += f"Image:\n"
+            output = output.replace("[AI GENERATED IMAGE]", f"![AI GENERATED IMAGE]({image_url})")
 
     else:
         scenario = get_completion(prompt)
@@ -75,12 +77,13 @@ def generate_question(prompt):
         output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\nAnswers:\n"
 
         for i, option in enumerate(answer_options):
-            image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
-            with st.spinner('Generating Thumbnail...'):
-                image_url = generate_image(image_prompt)
-            st.image(image_url, use_column_width=True)
             output += f"{chr(65+i)}. {option.strip()}\n"
-            output += f"Image:\n"
+            output += "[AI GENERATED IMAGE]\n\n"
+
+            image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
+            with st.spinner('Generating Image...'):
+                image_url = generate_image(image_prompt)
+            output = output.replace("[AI GENERATED IMAGE]", f"![AI GENERATED IMAGE]({image_url})")
 
     print("Answer Options:", answer_options)  # Debugging print
     return output
@@ -92,7 +95,7 @@ def main():
     if st.button("Generate Output"):
         output = generate_question(prompt)
         st.subheader("Generated Output:")
-        st.text(output)
+        st.markdown(output)
 
 if __name__ == "__main__":
     main()
