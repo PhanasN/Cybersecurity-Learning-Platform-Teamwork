@@ -10,7 +10,6 @@ def get_completion(prompt, model="gpt-3.5-turbo"):
     response = client.chat.completions.create(
         model=model,
         messages=messages,
-        max_tokens=max_tokens
     )
     return response.choices[0].message.content.strip()
 
