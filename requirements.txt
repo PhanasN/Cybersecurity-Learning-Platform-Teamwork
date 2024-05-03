@@ -2,3 +2,7 @@ streamlit
 pandas
 numpy
 openai
+IPython.display
+PIL
+requests
+
