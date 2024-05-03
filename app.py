@@ -17,20 +17,6 @@ def get_completion(prompt, model="gpt-3.5-turbo", max_tokens=200):
     )
     return response.choices[0].message.content.strip()
 
-def generate_image(prompt: str):
-    try:
-        response = openai.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1024x1024",
-            quality="standard",
-            n=1
-        )
-        return response.data[0].url
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
-
 def generate_question(prompt):
     if "plain text" in prompt.lower() and "image" in prompt.lower():
         question = get_completion(prompt)
@@ -45,6 +31,9 @@ def generate_question(prompt):
 
         for i, option in enumerate(answer_options):
             output += f"{chr(65+i)}. {option.strip()}\n"
+            image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
+            image_url = generate_image(image_prompt)
+            output += f"Image: {image_url}\n\n"
 
     elif "scenario image" in prompt.lower():
         question = get_completion(prompt)
@@ -59,6 +48,9 @@ def generate_question(prompt):
 
         for i, option in enumerate(answer_options):
             output += f"{chr(65+i)}. {option.strip()}\n"
+            image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
+            image_url = generate_image(image_prompt)
+            output += f"Image: {image_url}\n\n"
 
     else:
         scenario = get_completion(prompt)
@@ -74,12 +66,13 @@ def generate_question(prompt):
         output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\nAnswers:\n"
 
         for i, option in enumerate(answer_options):
-            image_prompt = f"Generate an image illustrating the following answer option:\n{option}"
+            image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             image_url = generate_image(image_prompt)
             output += f"{chr(65+i)}. {option.strip()}\n"
             output += f"Image: {image_url}\n\n"
 
     return output
+    
 
 def main():
     st.title("Cybersecurity Question Generator")
