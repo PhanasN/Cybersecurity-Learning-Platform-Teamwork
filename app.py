@@ -5,7 +5,7 @@ import os
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY")  # Used in production
 client = OpenAI(api_key=api_key)
 
-def get_completion(prompt, model="gpt-3.5-turbo", max_tokens=200):
+def get_completion(prompt, model="gpt-3.5-turbo"):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
         model=model,
@@ -14,10 +14,19 @@ def get_completion(prompt, model="gpt-3.5-turbo", max_tokens=200):
     )
     return response.choices[0].message.content.strip()
 
-def generate_image(prompt: str):
-    # Placeholder function for generating image URLs
-    # Replace this with your actual implementation
-    return "https://example.com/image.png"
+# Function to generate the image
+def generate_image(text):
+    if not api_key:
+        st.error("OpenAI API key is not set. Please set it in your environment variables.")
+        return
+
+    response = client.images.generate(
+        model="dall-e-3",
+        prompt=text,
+        size="1024x1024",
+        quality="standard",
+        n=1,
+    )
 
 def generate_question(prompt):
     print("Prompt:", prompt)  # Debugging print
