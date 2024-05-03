@@ -20,6 +20,8 @@ def generate_image(prompt: str):
     return "https://example.com/image.png"
 
 def generate_question(prompt):
+    print("Prompt:", prompt)  # Debugging print
+
     if "plain text" in prompt.lower() and "image" in prompt.lower():
         question = get_completion(prompt)
         answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
@@ -73,6 +75,7 @@ def generate_question(prompt):
             output += f"{chr(65+i)}. {option.strip()}\n"
             output += f"Image: {image_url}\n\n"
 
+    print("Answer Options:", answer_options)  # Debugging print
     return output
 
 def main():
