@@ -2,6 +2,6 @@ streamlit
 pandas
 numpy
 openai
-PIL
+Pillow
 requests
 
