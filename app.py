@@ -1,97 +1,95 @@
 import streamlit as st
 from openai import OpenAI
 import os
+from IPython.display import Image, display
+from PIL import Image as PILImage
+from io import BytesIO
+import requests
 
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY")  # Used in production
 client = OpenAI(api_key=api_key)
 
-# Authentication
+def get_completion(prompt, model="gpt-3.5-turbo", max_tokens=200):
+    messages = [{"role": "user", "content": prompt}]
+    response = openai.chat.completions.create(
+        model=model,
+        messages=messages,
+        max_tokens=max_tokens
+    )
+    return response.choices[0].message.content.strip()
 
-# Parent Helper Functions for Export:
+def generate_image(prompt: str):
+    try:
+        response = openai.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1
+        )
+        return response.data[0].url
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
 
-def exportClip():
-  pass
+def generate_question(prompt):
+    if "plain text" in prompt.lower() and "image" in prompt.lower():
+        question = get_completion(prompt)
+        answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
+        answer_options = answer_options.split("\n")
 
-def exportQuiz():
-  pass
+        output = f"Question:\n{question}\n\n"
 
-def exportQuizandClip():
-  pass
+        image_prompt = f"Generate an image illustrating the following question:\n{question}"
+        image_url = generate_image(image_prompt)
+        output += f"Image: {image_url}\n\nAnswers:\n"
 
-# Helper Functions for Content Generation
+        for i, option in enumerate(answer_options):
+            output += f"{chr(65+i)}. {option.strip()}\n"
 
-def scenarioScriptGeneration():
-  pass
+    elif "scenario image" in prompt.lower():
+        question = get_completion(prompt)
+        answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
+        answer_options = answer_options.split("\n")
 
-def scenarioVideoGeneration():
-  pass
+        output = f"Question:\n{question}\n\n"
 
-# Breaking apart generation and quiz creation
+        image_prompt = f"Generate an image illustrating the scenario described in the following question:\n{question}"
+        image_url = generate_image(image_prompt)
+        output += f"Image: {image_url}\n\nAnswers:\n"
 
-def scenarioGeneration():
-  st.title("Scenario Generation")
-  scenarioOptionsList = {
-        'English':{'Scenarios':["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
-        'Français': {'Scenarios':["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
-                 }
+        for i, option in enumerate(answer_options):
+            output += f"{chr(65+i)}. {option.strip()}\n"
 
-  components.iframe("https://invideo.io/", height=500) # Likely change to general text box for additional context with 2 buttons. 1 will be generate script, the second will be generate video
+    else:
+        scenario = get_completion(prompt)
+        question_prompt = "Generate a relevant question based on the following scenario:\n" + scenario
+        if "wrong" in prompt.lower():
+            question_prompt += "\nThe question should ask what action the user should NOT take."
+        else:
+            question_prompt += "\nThe question should ask what action the user should take."
+        question = get_completion(question_prompt)
+        answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
+        answer_options = answer_options.split("\n")
 
-  #userInputs
-  # TO DO - add dynamic language swap based on desired_language selected - change things to assume French as default
-  desired_language = st.sidebar.radio("Desired Language", ["English", "Français"], index = 0)
-  desired_scenario = st.sidebar.selectbox("IT Scenario to Generate", options = scenarioOptionsList[desired_language]['Scenarios'])
-  desired_tone = st.sidebar.selectbox("Desired Script Tone", options = scenarioOptionsList[desired_language]['Tones'])
+        output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\nAnswers:\n"
 
-  # Main Area
+        for i, option in enumerate(answer_options):
+            image_prompt = f"Generate an image illustrating the following answer option:\n{option}"
+            image_url = generate_image(image_prompt)
+            output += f"{chr(65+i)}. {option.strip()}\n"
+            output += f"Image: {image_url}\n\n"
 
-  # Four at Bottom after scenario generation - Generate Script, Generate Video, Regenerate [If generated content], Move onto Quiz Generation
-
-# Helper Functions for Content Generation
-
-def quizGeneration():
-  pass
-
-def quizFormatting():
-  pass
-
-def quizGen():
-  englishTest = ["Spearfishing", "CEO Impersonation"]
-  frenchTest = ["French 1", "French 2"]
-  st.title("Standard Quiz Generation")
-  
-  quizOptionsList = {
-        'English':{'Scenarios':["English1", "English 2"], 'Tones': ["Casual", "Professional"]},
-        'Français': {'Scenarios':["French1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
-                 }
-  
-
-  #userInputs
-
-  desired_language = st.sidebar.radio("Desired Language", ["English", "Français"], index = 0)
-  desired_scenario = st.sidebar.selectbox("IT Scenario to Generate", options = quizOptionsList[desired_language]['Scenarios'])
-  desired_tone = st.sidebar.selectbox("Desired Quiz Tone", options = quizOptionsList[desired_language]['Tones'])
-  use_last_scenario = st.sidebar.radio("Use Last Scenario?", ["Yes", "No"])
-
-  # Main Area
-  script = st.text_area("Enter your script that the quiz should be based upon here.") # Will likely be changed to a file upload later, so invideo can be dropped, whisper processes, then standard questions are formed.
- 
-  # Two Button at Bottom after Quiz Generation - Regenerate Questions, Save Changes, Export,
-
+    return output
 
 def main():
-  st.sidebar.title("Some Fancy Subtitle")
-  st.sidebar.subheader("Select your generation options")
+    print("Cybersecurity Question Generator")
+    prompt = input("Enter a prompt to generate the desired output: ")
 
-  pages = {
-      "Scenario Generation": scenarioGeneration,
-      "Quiz Generation": quizGen,
-  }
-  
-  page = st.sidebar.selectbox("What would you like to generate?", list(pages.keys()))
-  
-  pages[page]()
+    output = generate_question(prompt)
 
-# Run the app
+    print("\nGenerated Output:")
+    print(output)
+
 if __name__ == "__main__":
     main()
