@@ -42,11 +42,11 @@ def generate_question(prompt):
 
         output = f"Question:\n{question}\n\n"
 
-        for i, option in answer_options:
+        for option in answer_options:
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
-            output += f"{i+1}. {option.strip()}\n"
+            output += f"{option.strip()}\n"  # Removed numbering
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     elif "scenario image" in prompt.lower():
@@ -56,11 +56,11 @@ def generate_question(prompt):
 
         output = f"Question:\n{question}\n\n"
 
-        for i, option in answer_options:
+        for option in answer_options:
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
-            output += f"{i+1}. {option.strip()}\n"
+            output += f"{option.strip()}\n"  # Removed numbering
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     else:
@@ -76,11 +76,11 @@ def generate_question(prompt):
 
         output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\nAnswers:\n"
 
-        for i, option in answer_options:
+        for option in answer_options:
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
-            output += f"{i+1}. {option.strip()}\n"
+            output += f"{option.strip()}\n"  # Removed numbering
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     print("Answer Options:", answer_options)  # Debugging print
