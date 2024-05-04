@@ -45,7 +45,7 @@ def generate_question(prompt):
         for option in enumerate(answer_options):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
-                image_url = generate_image(image_prompt, size="256x256")
+                image_url = generate_image(image_prompt)
             output += f"{i+1}. {option.strip()}\n"
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
@@ -59,7 +59,7 @@ def generate_question(prompt):
         for option in enumerate(answer_options):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
-                image_url = generate_image(image_prompt, size="256x256")
+                image_url = generate_image(image_prompt)
             output += f"{i+1}. {option.strip()}\n"
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
@@ -79,7 +79,7 @@ def generate_question(prompt):
         for option in eunerate(answer_options):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
-                image_url = generate_image(image_prompt, size="256x256")
+                image_url = generate_image(image_prompt)
             output += f"{i+1}. {option.strip()}\n"
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
