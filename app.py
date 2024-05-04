@@ -5,13 +5,14 @@ import os
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY")  # Used in production
 client = OpenAI(api_key=api_key)
 
-def get_completion(prompt, model="gpt-3.5-turbo"):
+def get_completion(prompt, model="gpt-3.5-turbo", temperature=0):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
         model=model,
         messages=messages,
+        temperature=temperature  # Lower temperature for less random responses
     )
-    return response.choices[0].message.content.strip()
+    return response.choices[0].message.content
 
 # Function to generate the image
 def generate_image(text):
@@ -23,7 +24,7 @@ def generate_image(text):
         response = client.images.generate(
             model="dall-e-3",
             prompt=text,
-            size="1024x1024",
+            size="square",  # Adjusted size to be square for better proportions
             quality="standard",
             n=1,
         )
@@ -46,7 +47,7 @@ def generate_question(prompt):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
-            output += f"- {option.strip()}\n"
+            output += f"{option.strip()}\n"
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     elif "scenario image" in prompt.lower():
@@ -60,7 +61,7 @@ def generate_question(prompt):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
-            output += f"- {option.strip()}\n"
+            output += f"{option.strip()}\n"
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     else:
@@ -74,13 +75,13 @@ def generate_question(prompt):
         answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
         answer_options = answer_options.split("\n")
 
-        output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\nAnswers:\n"
+        output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\n"
 
         for option in answer_options:
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
-            output += f"- {option.strip()}\n"
+            output += f"{option.strip()}\n"
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     print("Answer Options:", answer_options)  # Debugging print
