@@ -63,11 +63,4 @@ def generate_question(prompt):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt, size="256x256")
-            output += f"{option.strip()}\n"
-            output += f"![AI GENERATED IMAGE]({image_url})\n\n"
-
-    else:
-        scenario = get_completion(prompt)
-        question_prompt = "Generate a relevant question based on the following scenario:\n" + scenario
-        if "wrong" in prompt.lower():
-            question_prompt += "\nThe question should ask what action
+            outpu
