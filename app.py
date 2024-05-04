@@ -2,24 +2,29 @@ import streamlit as st
 from openai import OpenAI
 import os
 
-# Function to get completion with adjusted temperature
-def get_completion(prompt, model="text-davinci-002", temperature=0):
-    client = OpenAI(api_key=st.secrets["CYBERSECURITY_OPENAI_API_KEY"])
+api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY")  # Used in production
+client = OpenAI(api_key=api_key)
+
+def get_completion(prompt, model="gpt-3.5-turbo"):
     messages = [{"role": "user", "content": prompt}]
-    response = client.chat_completions.create(
+    response = client.chat.completions.create(
         model=model,
         messages=messages,
-        temperature=temperature
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.content.strip()
 
 # Function to generate the image
-def generate_image(text, size="256x256"):
-    client = OpenAI(api_key=st.secrets["openai_api_key"])
+def generate_image(text):
+    if not api_key:
+        st.error("OpenAI API key is not set. Please set it in your environment variables.")
+        return
+
     try:
         response = client.images.generate(
+            model="dall-e-3",
             prompt=text,
-            size=size,
+            size="1024x1024",
+            quality="standard",
             n=1,
         )
         return response.data[0].url
@@ -27,36 +32,35 @@ def generate_image(text, size="256x256"):
         st.error(f"Error generating image: {e}")
         return None
 
-# Function to generate question and corresponding images
 def generate_question(prompt):
     print("Prompt:", prompt)  # Debugging print
 
     if "plain text" in prompt.lower() and "image" in prompt.lower():
         question = get_completion(prompt)
-        answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n", temperature=0)
+        answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
         answer_options = answer_options.split("\n")
 
         output = f"Question:\n{question}\n\n"
 
-        for option in answer_options:
+        for option in enumerate(answer_options):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
-                image_url = generate_image(image_prompt, size="256x256")
-            output += f"{option.strip()}\n"
+                image_url = generate_image(image_prompt size="256x256")
+            output += f"{i+1}. {option.strip()}\n"
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     elif "scenario image" in prompt.lower():
         question = get_completion(prompt)
-        answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n", temperature=0)
+        answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
         answer_options = answer_options.split("\n")
 
         output = f"Question:\n{question}\n\n"
 
-        for option in answer_options:
+        for option in enumerate(answer_options):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
-                image_url = generate_image(image_prompt, size="256x256")
-            output += f"{option.strip()}\n"
+                image_url = generate_image(image_prompt size="256x256")
+            output += f"{i+1}. {option.strip()}\n"
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     else:
@@ -67,22 +71,21 @@ def generate_question(prompt):
         else:
             question_prompt += "\nThe question should ask what action the user should take."
         question = get_completion(question_prompt)
-        answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n", temperature=0)
+        answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
         answer_options = answer_options.split("\n")
 
         output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\nAnswers:\n"
 
-        for option in answer_options:
+        for option in eunerate(answer_options):
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
-                image_url = generate_image(image_prompt, size="256x256")
-            output += f"{option.strip()}\n"
+                image_url = generate_image(image_prompt size="256x256")
+            output += f"{i+1}. {option.strip()}\n"
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     print("Answer Options:", answer_options)  # Debugging print
     return output
 
-# Main function to display Streamlit UI
 def main():
     st.title("Cybersecurity Question Generator")
     prompt = st.text_input("Enter a prompt to generate the desired output:")
