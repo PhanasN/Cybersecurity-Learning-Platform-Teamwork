@@ -42,7 +42,7 @@ def generate_question(prompt):
 
         output = f"Question:\n{question}\n\n"
 
-        for i, option in enumerate(answer_options):
+        for i, option in answer_options:
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
@@ -56,7 +56,7 @@ def generate_question(prompt):
 
         output = f"Question:\n{question}\n\n"
 
-        for i, option in enumerate(answer_options):
+        for i, option in answer_options:
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
@@ -76,7 +76,7 @@ def generate_question(prompt):
 
         output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\nAnswers:\n"
 
-        for i, option in enumerate(answer_options):
+        for i, option in answer_options:
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
                 image_url = generate_image(image_prompt)
