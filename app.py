@@ -52,7 +52,7 @@ def generate_question(prompt):
         for option in answer_options:
             image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
             with st.spinner('Generating Image...'):
-                image_url = generate_image(image_prompt) # Changed to accomodate additional output from image generation function
+                image_url = generate_image(image_prompt)
             output += f"{option.strip()}\n"  # Removed numbering
             output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
@@ -133,7 +133,7 @@ def main():
     desired_tone = st.sidebar.selectbox("Desired script tone/Ton de script souhaité", options = scenarioOptionsList[desired_language]['Tones'])
 
     if st.button("Generate Output"):
-        output, image_ids = generate_question(prompt)
+        output = generate_question(prompt)
         st.subheader("Generated Output:")
         st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
 
