@@ -18,7 +18,7 @@ def get_completion(prompt, model="gpt-3.5-turbo"):
 def generate_image(text, size="256x256"):  # Default size is set to 256x256
     if not api_key:
         st.error("OpenAI API key is not set. Please set it in your environment variables.")
-        return
+        return None
 
     try:
         response = client.images.generate(
@@ -182,15 +182,10 @@ def main():
                                         options=scenarioOptionsList[desired_language]['Tones'])
 
     if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
-        output, answer_options = generate_question(prompt, desired_language)  # Retrieve answer_options
-        st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
-        st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
-
-        if output:
-            selected_answer = st.radio("Select your answer:", options=answer_options)
-            if st.button("Check Answer"):
-                feedback = check_answer(prompt, answer_options, selected_answer, desired_language)
-                st.write(feedback)
+        output = generate_question(prompt, desired_language)
+        if output:  # Check if output is generated successfully
+            st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
+            st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
                 
 if __name__ == "__main__":
     main()
