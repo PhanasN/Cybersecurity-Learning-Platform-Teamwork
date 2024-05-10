@@ -2,7 +2,6 @@ import streamlit as st
 from openai import OpenAI
 import os
 import requests
-from PIL import Image
 import io
 import tempfile
 
