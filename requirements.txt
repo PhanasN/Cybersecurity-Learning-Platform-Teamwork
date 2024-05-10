@@ -3,6 +3,4 @@ pandas
 numpy
 openai
 requests
-io
-tempfile
 Pillow
