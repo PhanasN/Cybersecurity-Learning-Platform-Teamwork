@@ -1,9 +1,6 @@
 import streamlit as st
 from openai import OpenAI
 import os
-import requests
-import io
-import tempfile
 from PIL import Image
 import json
 
@@ -169,51 +166,35 @@ def check_answer(question, answer_options, selected_answer, language):
             return f"Incorrect!\n\n{explanation}"
 
 def main():
-    st.title("Cybersecurity Question Generator")
-    prompt = st.text_input("Enter a prompt to generate the desired output:")
+    language_labels = {
+        "English": {
+            "title": "Cybersecurity Question Generator",
+            "prompt": "Enter a prompt to generate the desired output:"
+        },
+        "Français": {
+            "title": "Générateur de Questions de Cybersécurité",
+            "prompt": "Entrez une instruction pour générer la sortie désirée:"
+        }
+    }
+
+    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=0)
+    st.title(language_labels[desired_language]["title"])
+    prompt = st.text_input(language_labels[desired_language]["prompt"])
 
     scenarioOptionsList = {
         'English': {'Scenarios': ["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
         'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
     }
 
-    desired_language = st.sidebar.radio("Desired language/Langue souhaitée", ["English", "Français"], index=0)
-    desired_scenario = st.sidebar.selectbox("IT scenario to generate/Scénario informatique à générer",
+    desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
                                             options=scenarioOptionsList[desired_language]['Scenarios'])
-    desired_tone = st.sidebar.selectbox("Desired script tone/Ton de script souhaité",
+    desired_tone = st.sidebar.selectbox("Ton de script souhaité",
                                         options=scenarioOptionsList[desired_language]['Tones'])
 
-    if st.button("Generate Output"):
+    if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
         output = generate_question(prompt, desired_language)
-        st.subheader("Generated Output:")
+        st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
         st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
-
-    if "generated_output" not in st.session_state:
-        st.session_state.generated_output = None
-    if "feedback_displayed" not in st.session_state:
-        st.session_state.feedback_displayed = False
-
-    if st.session_state.generated_output:
-        st.subheader("Generated Output:")
-        st.markdown(st.session_state.generated_output, unsafe_allow_html=True)
-
-        answer_options = [option.strip() for option in st.session_state.generated_output.split("\n") if option.startswith("- ")]
-
-        selected_answer = st.radio("Choices:" if desired_language == "English" else "Choix:", answer_options)
-
-        if st.button("Submit" if desired_language == "English" else "Soumettre"):
-            feedback = check_answer(prompt, "\n".join(answer_options), selected_answer, desired_language)
-            if feedback.startswith("Correct"):
-                st.success(feedback)
-            else:
-                st.error(feedback)
-            st.session_state.feedback_displayed = True
-
-    if st.session_state.feedback_displayed:
-        if st.button("Next" if desired_language == "English" else "Suivant"):
-            st.session_state.generated_output = None
-            st.session_state.feedback_displayed = False
-            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
