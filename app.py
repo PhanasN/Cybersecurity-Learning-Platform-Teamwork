@@ -5,6 +5,7 @@ import requests
 import io
 import tempfile
 from PIL import Image
+import json
 
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY")  # Used in production
 client = OpenAI(api_key=api_key)
@@ -149,21 +150,22 @@ def generate_question(prompt, language):
     print("Answer Options:", answer_options)  # Debugging print
     return output
 
+
 def check_answer(question, answer_options, selected_answer, language):
     correct_answer = get_completion(f"Which of the following is the correct answer to the question:\n{question}\n{answer_options}")
     if selected_answer.strip() == correct_answer.strip():
         if language == "English":
-            explanation = get_completion(f'Provide a brief explanation of why "{selected_answer}" is the correct answer to the question:\n{question.replace("\\", "\\\\").replace("\n", "\\n")}')
+            explanation = get_completion(json.dumps(f'Provide a brief explanation of why "{selected_answer}" is the correct answer to the question:\n{question}'))
             return f"Correct!\n\n{explanation}"
         else:
-            explanation = get_completion(f'Fournissez une brève explication de pourquoi "{selected_answer}" est la bonne réponse à la question :\n{question.replace("\\", "\\\\").replace("\n", "\\n")}')
+            explanation = get_completion(json.dumps(f'Fournissez une brève explication de pourquoi "{selected_answer}" est la bonne réponse à la question :\n{question}'))
             return f"Correct!\n\n{explanation}"
     else:
         if language == "English":
-            explanation = get_completion(f'Provide a brief explanation of why "{selected_answer}" is not the correct answer to the question:\n{question.replace("\\", "\\\\").replace("\n", "\\n")}\n\nThe correct answer is: {correct_answer}')
+            explanation = get_completion(json.dumps(f'Provide a brief explanation of why "{selected_answer}" is not the correct answer to the question:\n{question}\n\nThe correct answer is: {correct_answer}'))
             return f"Incorrect!\n\n{explanation}"
         else:
-            explanation = get_completion(f'Fournissez une brève explication de pourquoi "{selected_answer}" n\'est pas la bonne réponse à la question :\n{question.replace("\\", "\\\\").replace("\n", "\\n")}\n\nLa bonne réponse est : {correct_answer}')
+            explanation = get_completion(json.dumps(f'Fournissez une brève explication de pourquoi "{selected_answer}" n\'est pas la bonne réponse à la question :\n{question}\n\nLa bonne réponse est : {correct_answer}'))
             return f"Incorrect!\n\n{explanation}"
 
 def main():
