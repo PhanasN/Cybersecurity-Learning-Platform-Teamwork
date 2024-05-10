@@ -166,8 +166,8 @@ def check_answer(question, answer_options, selected_answer, language):
             return f"Incorrect!\n\n{explanation}"
 
 def main():
-    st.title("Générateur de Questions en Cybersécurité")
-    prompt = st.text_input("Entrez une suggestion pour générer la sortie souhaitée :")
+    st.title("Générateur de Questions de Cybersécurité")
+    prompt = st.text_input("Entrez une instruction pour générer la sortie désirée:")
 
     scenarioOptionsList = {
         'English': {'Scenarios': ["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
@@ -180,37 +180,16 @@ def main():
     desired_tone = st.sidebar.selectbox("Ton de script souhaité",
                                         options=scenarioOptionsList[desired_language]['Tones'])
 
-    if st.button("Générer la sortie"):
-        output = generate_question(prompt, desired_language)
-        st.subheader("Sortie Générée:")
-        st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
-
-    if "generated_output" not in st.session_state:
-        st.session_state.generated_output = None
-    if "feedback_displayed" not in st.session_state:
-        st.session_state.feedback_displayed = False
-
-    if st.session_state.generated_output:
-        st.subheader("Sortie Générée:")
-        st.markdown(st.session_state.generated_output, unsafe_allow_html=True)
-
-        answer_options = [option.strip() for option in st.session_state.generated_output.split("\n") if option.startswith("- ")]
-
-        selected_answer = st.radio("Choix :", answer_options)
-
-        if st.button("Soumettre"):
-            feedback = check_answer(prompt, "\n".join(answer_options), selected_answer, desired_language)
-            if feedback.startswith("Correct"):
-                st.success(feedback)
-            else:
-                st.error(feedback)
-            st.session_state.feedback_displayed = True
-
-    if st.session_state.feedback_displayed:
-        if st.button("Suivant"):
-            st.session_state.generated_output = None
-            st.session_state.feedback_displayed = False
-            st.experimental_rerun()
+    if desired_language == "Français":
+        if st.button("Générer la sortie"):
+            output = generate_question(prompt, desired_language)
+            st.subheader("Sortie Générée:")
+            st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
+    else:
+        if st.button("Generate Output"):
+            output = generate_question(prompt, desired_language)
+            st.subheader("Generated Output:")
+            st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
 
 if __name__ == "__main__":
     main()
