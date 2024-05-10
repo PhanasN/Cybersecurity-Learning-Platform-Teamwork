@@ -145,8 +145,7 @@ def generate_question(prompt, language):
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
     print("Answer Options:", answer_options)  # Debugging print
-    return output
-
+    return output, answer_options  # Return both output and answer_options
 
 def check_answer(question, answer_options, selected_answer, language):
     correct_answer = get_completion(f"Which of the following is the correct answer to the question:\n{question}\n{answer_options}")
