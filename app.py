@@ -166,8 +166,19 @@ def check_answer(question, answer_options, selected_answer, language):
             return f"Incorrect!\n\n{explanation}"
 
 def main():
-    st.title("Générateur de Questions de Cybersécurité")
-    prompt = st.text_input("Entrez une instruction pour générer la sortie désirée:")
+    language_labels = {
+        "English": {
+            "title": "Cybersecurity Question Generator",
+            "prompt": "Enter a prompt to generate the desired output:"
+        },
+        "Français": {
+            "title": "Générateur de Questions de Cybersécurité",
+            "prompt": "Entrez une instruction pour générer la sortie désirée:"
+        }
+    }
+
+    st.title(language_labels["English"]["title"])
+    prompt = st.text_input(language_labels["English"]["prompt"])
 
     scenarioOptionsList = {
         'English': {'Scenarios': ["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
@@ -180,16 +191,10 @@ def main():
     desired_tone = st.sidebar.selectbox("Ton de script souhaité",
                                         options=scenarioOptionsList[desired_language]['Tones'])
 
-    if desired_language == "Français":
-        if st.button("Générer la sortie"):
-            output = generate_question(prompt, desired_language)
-            st.subheader("Sortie Générée:")
-            st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
-    else:
-        if st.button("Generate Output"):
-            output = generate_question(prompt, desired_language)
-            st.subheader("Generated Output:")
-            st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
+    if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
+        output = generate_question(prompt, desired_language)
+        st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
+        st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
 
 if __name__ == "__main__":
     main()
