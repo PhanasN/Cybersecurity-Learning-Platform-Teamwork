@@ -76,4 +76,5 @@ def generate_question(prompt):
         answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante :\n{question}\n")
         answer_options = answer_options.split("\n")
 
-        output = f"Scénario :\n{scenario}\n\nQuelle action devriez-vous pre
+        output = f"Scénario :\n{scenario}\n\nQuelle action devriez-vous prendre ?\n\nRéponses :\n"
+
