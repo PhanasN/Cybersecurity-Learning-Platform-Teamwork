@@ -1,6 +1,10 @@
 import streamlit as st
 from openai import OpenAI
 import os
+import requests
+import io
+import tempfile
+from PIL import Image
 
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY")  # Used in production
 client = OpenAI(api_key=api_key)
@@ -52,11 +56,11 @@ def generate_question(prompt, language):
 
             output = f"Question:\n{question}\n\n"
 
-            for idx, option in enumerate(answer_options, start=1):
-                image_prompt = f"Generate an image illustrating the answer option {idx}: {option.strip()}"
+            for option in answer_options:
+                image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
                 with st.spinner('Generating Image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
         elif "scenario image" in prompt.lower():
@@ -66,11 +70,11 @@ def generate_question(prompt, language):
 
             output = f"Question:\n{question}\n\n"
 
-            for idx, option in enumerate(answer_options, start=1):
-                image_prompt = f"Generate an image illustrating the answer option {idx}: {option.strip()}"
+            for option in answer_options:
+                image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
                 with st.spinner('Generating Image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
         else:
@@ -86,11 +90,11 @@ def generate_question(prompt, language):
 
             output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\nAnswers:\n"
 
-            for idx, option in enumerate(answer_options, start=1):
-                image_prompt = f"Generate an image illustrating the answer option {idx}: {option.strip()}"
+            for option in answer_options:
+                image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
                 with st.spinner('Generating Image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     elif language == "Français":
@@ -101,11 +105,11 @@ def generate_question(prompt, language):
 
             output = f"Question:\n{question}\n\n"
 
-            for idx, option in enumerate(answer_options, start=1):
-                image_prompt = f"Générer une image illustrant l'option de réponse {idx}: {option.strip()}"
+            for option in answer_options:
+                image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
                 with st.spinner('Génération de l\'image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
         elif "image de scénario" in prompt.lower():
@@ -115,11 +119,11 @@ def generate_question(prompt, language):
 
             output = f"Question:\n{question}\n\n"
 
-            for idx, option in enumerate(answer_options, start=1):
-                image_prompt = f"Générer une image illustrant l'option de réponse {idx}: {option.strip()}"
+            for option in answer_options:
+                image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
                 with st.spinner('Génération de l\'image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
         else:
@@ -135,11 +139,11 @@ def generate_question(prompt, language):
 
             output = f"Scénario:\n{scenario}\n\nQuelle action devriez-vous prendre?\n\nRéponses:\n"
 
-            for idx, option in enumerate(answer_options, start=1):
-                image_prompt = f"Générer une image illustrant l'option de réponse {idx}: {option.strip()}"
+            for option in answer_options:
+                image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
                 with st.spinner('Génération de l\'image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
     print("Answer Options:", answer_options)  # Debugging print
@@ -149,14 +153,14 @@ def check_answer(question, answer_options, selected_answer, language):
     correct_answer = get_completion(f"Which of the following is the correct answer to the question:\n{question}\n{answer_options}")
     if selected_answer.strip() == correct_answer.strip():
         if language == "English":
-            return f"Correct!\n\n{get_completion(f'Provide a brief explanation of why \"{selected_answer}\" is the correct answer to the question:\n{question}')}"
+            return f"Correct!\n\n{get_completion(f'Provide a brief explanation of why \"{selected_answer}\" is the correct answer to the question:\\n{question}')}"
         else:
-            return f"Correct!\n\n{get_completion(f'Fournissez une brève explication de pourquoi \"{selected_answer}\" est la bonne réponse à la question :\n{question}')}"
+            return f"Correct!\n\n{get_completion(f'Fournissez une brève explication de pourquoi \"{selected_answer}\" est la bonne réponse à la question :\\n{question}')}"
     else:
         if language == "English":
-            return f"Incorrect!\n\n{get_completion(f'Provide a brief explanation of why \"{selected_answer}\" is not the correct answer to the question:\n{question}\n\nThe correct answer is: {correct_answer}')}"
+            return f"Incorrect!\n\n{get_completion(f'Provide a brief explanation of why \"{selected_answer}\" is not the correct answer to the question:\\n{question}\\n\\nThe correct answer is: {correct_answer}')}"
         else:
-            return f"Incorrect!\n\n{get_completion(f'Fournissez une brève explication de pourquoi \"{selected_answer}\" n\'est pas la bonne réponse à la question :\n{question}\n\nLa bonne réponse est : {correct_answer}')}"
+            return f"Incorrect!\n\n{get_completion(f'Fournissez une brève explication de pourquoi \"{selected_answer}\" n\'est pas la bonne réponse à la question :\\n{question}\\n\\nLa bonne réponse est : {correct_answer}')}"
 
 
 def main():
