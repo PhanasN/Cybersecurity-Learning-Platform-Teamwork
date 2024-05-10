@@ -177,15 +177,15 @@ def main():
         }
     }
 
-    st.title(language_labels["English"]["title"])
-    prompt = st.text_input(language_labels["English"]["prompt"])
+    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=0)
+    st.title(language_labels[desired_language]["title"])
+    prompt = st.text_input(language_labels[desired_language]["prompt"])
 
     scenarioOptionsList = {
         'English': {'Scenarios': ["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
         'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
     }
 
-    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=0)
     desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
                                             options=scenarioOptionsList[desired_language]['Scenarios'])
     desired_tone = st.sidebar.selectbox("Ton de script souhaité",
