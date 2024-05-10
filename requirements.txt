@@ -5,3 +5,4 @@ openai
 requests
 io
 tempfile
+PILLOW
