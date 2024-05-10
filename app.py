@@ -155,7 +155,7 @@ def check_answer(question, answer_options, selected_answer, language):
             explanation = get_completion(json.dumps(f'Fournissez une brève explication de pourquoi "{selected_answer}" n\'est pas la bonne réponse à la question :\n{question}\n\nLa bonne réponse est : {correct_answer}'))
             return f"Incorrect!\n\n{explanation}"
 
-def main():
+def main(desired_language):
     # Existing code...
 
     if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
@@ -171,6 +171,24 @@ def main():
             if st.button("Check Answer"):
                 explanation = check_answer(prompt, answer_options, selected_answer, desired_language)
                 st.write(explanation)
+
+if __name__ == "__main__":
+    language_labels = {
+        "English": {
+            "title": "Cybersecurity Question Generator",
+            "prompt": "Enter a prompt to generate the desired output:"
+        },
+        "Français": {
+            "title": "Générateur de Questions de Cybersécurité",
+            "prompt": "Entrez une instruction pour générer la sortie désirée:"
+        }
+    }
+
+    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=0)
+    st.title(language_labels[desired_language]["title"])
+    prompt = st.text_input(language_labels[desired_language]["prompt"])
+
+    main(desired_language)
                 
 if __name__ == "__main__":
     main()
