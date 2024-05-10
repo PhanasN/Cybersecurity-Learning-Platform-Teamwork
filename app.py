@@ -1,8 +1,6 @@
 import streamlit as st
 from openai import OpenAI
 import os
-import requests
-from PIL import Image
 
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY")  # Used in production
 client = OpenAI(api_key=api_key)
@@ -35,8 +33,6 @@ def generate_image(text):
         return None
 
 def generate_question(prompt):
-    imageIds = []
-
     if "plain text" in prompt.lower() and "image" in prompt.lower():
         question = get_completion(prompt)
         answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante :\n{question}\n")
@@ -55,24 +51,4 @@ def generate_question(prompt):
         answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante :\n{question}\n")
         answer_options = answer_options.split("\n")
 
-        output = f"Question :\n{question}\n\n"
-
-        for option in answer_options:
-            image_prompt = f"Générer une image illustrant l'option de réponse : {option.strip()}"
-            image_url = generate_image(image_prompt)
-            output += f"{option.strip()}\n"  # Removed numbering
-            output += f"![IMAGE GÉNÉRÉE PAR IA]({image_url})\n\n"
-
-    else:
-        scenario = get_completion(prompt)
-        question_prompt = "Générer une question pertinente basée sur le scénario suivant :\n" + scenario
-        if "wrong" in prompt.lower():
-            question_prompt += "\nLa question doit demander quelle action l'utilisateur ne devrait PAS prendre."
-        else:
-            question_prompt += "\nLa question doit demander quelle action l'utilisateur devrait prendre."
-        question = get_completion(question_prompt)
-        answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante :\n{question}\n")
-        answer_options = answer_options.split("\n")
-
-        output = f"Scénario :\n{scenario}\n\nQuelle action devriez-vous prendre ?\n\nRéponses :\n"
-
+        output = f"Question :
