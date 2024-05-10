@@ -196,5 +196,11 @@ def main():
         st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
         st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
 
+    if output:
+        selected_answer = st.radio("Select your answer:", options=answer_options)
+        if st.button("Check Answer"):
+            feedback = check_answer(question, answer_options, selected_answer, desired_language)
+            st.write(feedback)
+
 if __name__ == "__main__":
     main()
