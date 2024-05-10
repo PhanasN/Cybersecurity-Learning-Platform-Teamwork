@@ -1,4 +1,3 @@
-You have this code:
 import streamlit as st
 from openai import OpenAI
 import os
