@@ -15,19 +15,10 @@ def get_completion(prompt, model="gpt-3.5-turbo"):
     )
     return response.choices[0].message.content.strip()
 
-def generate_image(text, size=None):
+def generate_image(text, size="256x256"):  # Default size is set to 256x256
     if not api_key:
         st.error("OpenAI API key is not set. Please set it in your environment variables.")
         return
-
-    if size is None:
-        text_length = len(text)
-        if text_length <= 50:
-            size = "256x256"
-        elif text_length <= 100:
-            size = "512x512"
-        else:
-            size = "1024x1024"
 
     try:
         response = client.images.generate(
