@@ -15,16 +15,25 @@ def get_completion(prompt, model="gpt-3.5-turbo"):
     )
     return response.choices[0].message.content.strip()
 
-def generate_image(text, size="256x256"):  # Default size is set to 256x256
+def generate_image(text, size=None):
     if not api_key:
         st.error("OpenAI API key is not set. Please set it in your environment variables.")
-        return None
+        return
+
+    if size is None:
+        text_length = len(text)
+        if text_length <= 50:
+            size = "256x256"
+        elif text_length <= 100:
+            size = "512x512"
+        else:
+            size = "1024x1024"
 
     try:
         response = client.images.generate(
             model="dall-e-3",
             prompt=text,
-            size=size,  # Use a valid size parameter
+            size=size,
             quality="standard",
             n=1,
         )
@@ -136,7 +145,8 @@ def generate_question(prompt, language):
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
     print("Answer Options:", answer_options)  # Debugging print
-    return output, answer_options  # Return both output and answer_options
+    return output
+
 
 def check_answer(question, answer_options, selected_answer, language):
     correct_answer = get_completion(f"Which of the following is the correct answer to the question:\n{question}\n{answer_options}")
@@ -155,24 +165,7 @@ def check_answer(question, answer_options, selected_answer, language):
             explanation = get_completion(json.dumps(f'Fournissez une brève explication de pourquoi "{selected_answer}" n\'est pas la bonne réponse à la question :\n{question}\n\nLa bonne réponse est : {correct_answer}'))
             return f"Incorrect!\n\n{explanation}"
 
-def main(desired_language):
-    # Existing code...
-
-    if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
-        output, answer_options = generate_question(prompt, desired_language)
-        if output:  # Check if output is generated successfully
-            st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
-            st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
-            
-            # Add radio buttons for answer options
-            selected_answer = st.radio("Select your answer:", options=answer_options)
-            
-            # Handle answer checking
-            if st.button("Check Answer"):
-                explanation = check_answer(prompt, answer_options, selected_answer, desired_language)
-                st.write(explanation)
-
-if __name__ == "__main__":
+def main():
     language_labels = {
         "English": {
             "title": "Cybersecurity Question Generator",
@@ -188,7 +181,20 @@ if __name__ == "__main__":
     st.title(language_labels[desired_language]["title"])
     prompt = st.text_input(language_labels[desired_language]["prompt"])
 
-    main(desired_language)
-                
+    scenarioOptionsList = {
+        'English': {'Scenarios': ["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
+        'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
+    }
+
+    desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
+                                            options=scenarioOptionsList[desired_language]['Scenarios'])
+    desired_tone = st.sidebar.selectbox("Ton de script souhaité",
+                                        options=scenarioOptionsList[desired_language]['Tones'])
+
+    if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
+        output = generate_question(prompt, desired_language)
+        st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
+        st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
+
 if __name__ == "__main__":
     main()
