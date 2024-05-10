@@ -2,7 +2,6 @@ streamlit
 pandas
 numpy
 openai
-Pillow
 requests
 io
 tempfile
