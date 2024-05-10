@@ -51,5 +51,16 @@ def generate_question(prompt):
         answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante :\n{question}\n")
         answer_options = answer_options.split("\n")
 
-        output = f"Question :"
+        output = f"Question :\n{question}\n\n"
+
+        for option in answer_options:
+            image_prompt = f"Générer une image illustrant l'option de réponse : {option.strip()}"
+            image_url = generate_image(image_prompt)
+            output += f"{option.strip()}\n"  # Removed numbering
+            output += f"![IMAGE GÉNÉRÉE PAR IA]({image_url})\n\n"
+
+    else:
+        output = "Le type de prompt n'est pas pris en charge."
+
+    return output
 
