@@ -132,6 +132,8 @@ def main():
             'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["Décontracté", "Professionnel"]}
         }
 
+    prompt = st.text_input("Enter a prompt to generate the desired output:")
+
     desired_scenario = st.sidebar.selectbox("IT scenario to generate/Scénario informatique à générer",
                                              options=scenarioOptionsList[desired_language]['Scenarios'])
     desired_tone = st.sidebar.selectbox("Desired script tone/Ton de script souhaité",
@@ -143,7 +145,6 @@ def main():
             st.subheader("Generated Output:")
             st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
 
-    # Need state management to allow for smooth regeneration and for things to not disappear the second a menu option is changed, forcing refresh
-
 if __name__ == "__main__":
     main()
+
