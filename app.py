@@ -192,15 +192,15 @@ def main():
                                         options=scenarioOptionsList[desired_language]['Tones'])
 
     if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
-        output = generate_question(prompt, desired_language)
+        output, answer_options = generate_question(prompt, desired_language)  # Retrieve answer_options
         st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
         st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
 
         if output:
             selected_answer = st.radio("Select your answer:", options=answer_options)
             if st.button("Check Answer"):
-                feedback = check_answer(question, answer_options, selected_answer, desired_language)
+                feedback = check_answer(prompt, answer_options, selected_answer, desired_language)
                 st.write(feedback)
-
+                
 if __name__ == "__main__":
     main()
