@@ -1,6 +1,10 @@
 import streamlit as st
 from openai import OpenAI
 import os
+import requests
+import io
+import tempfile
+from PIL import Image
 
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY")  # Used in production
 client = OpenAI(api_key=api_key)
@@ -13,101 +17,198 @@ def get_completion(prompt, model="gpt-3.5-turbo"):
     )
     return response.choices[0].message.content.strip()
 
-def generate_image(text):
+def generate_image(text, size=None):
     if not api_key:
-        st.error("La clé API OpenAI n'est pas définie. Veuillez la définir dans vos variables d'environnement.")
+        st.error("OpenAI API key is not set. Please set it in your environment variables.")
         return
 
+    if size is None:
+        text_length = len(text)
+        if text_length <= 50:
+            size = "256x256"
+        elif text_length <= 100:
+            size = "512x512"
+        else:
+            size = "1024x1024"
+
     try:
-        with st.spinner('Génération de l\'image...'):
-            response = client.images.generate(
-                model="dall-e-3",
-                prompt=text,
-                size="1024x1024",
-                quality="standard",
-                n=1,
-            )
-            return response.data[0].url
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=text,
+            size=size,
+            quality="standard",
+            n=1,
+        )
+        return response.data[0].url
     except Exception as e:
-        st.error(f"Erreur lors de la génération de l'image : {e}")
+        st.error(f"Error generating image: {e}")
         return None
 
-def generate_question(prompt):
-    if "plain text" in prompt.lower() and "image" in prompt.lower():
-        question = get_completion(prompt)
-        answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante :\n{question}\n")
-        answer_options = answer_options.split("\n")
+def generate_question(prompt, language):
+    print("Prompt:", prompt)  # Debugging print
+    imageIds = []
 
-        output = f"Question :\n{question}\n\n"
+    if language == "English":
+        if "plain text" in prompt.lower() and "image" in prompt.lower():
+            question = get_completion(prompt)
+            answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
+            answer_options = answer_options.split("\n")
 
-        for option in answer_options:
-            image_prompt = f"Générer une image illustrant l'option de réponse : {option.strip()}"
-            image_url = generate_image(image_prompt)
-            output += f"{option.strip()}\n"  # Removed numbering
-            output += f"![IMAGE GÉNÉRÉE PAR IA]({image_url})\n\n"
+            output = f"Question:\n{question}\n\n"
 
-    elif "scenario image" in prompt.lower():
-        question = get_completion(prompt)
-        answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante :\n{question}\n")
-        answer_options = answer_options.split("\n")
+            for option in answer_options:
+                image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
+                with st.spinner('Generating Image...'):
+                    image_url = generate_image(image_prompt)
+                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
-        output = f"Question :\n{question}\n\n"
+        elif "scenario image" in prompt.lower():
+            question = get_completion(prompt)
+            answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
+            answer_options = answer_options.split("\n")
 
-        for option in answer_options:
-            image_prompt = f"Générer une image illustrant l'option de réponse : {option.strip()}"
-            image_url = generate_image(image_prompt)
-            output += f"{option.strip()}\n"  # Removed numbering
-            output += f"![IMAGE GÉNÉRÉE PAR IA]({image_url})\n\n"
+            output = f"Question:\n{question}\n\n"
 
-    else:
-        output = "Le type de prompt n'est pas pris en charge."
+            for option in answer_options:
+                image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
+                with st.spinner('Generating Image...'):
+                    image_url = generate_image(image_prompt)
+                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
+        else:
+            scenario = get_completion(prompt)
+            question_prompt = "Generate a relevant question based on the following scenario:\n" + scenario
+            if "wrong" in prompt.lower():
+                question_prompt += "\nThe question should ask what action the user should NOT take."
+            else:
+                question_prompt += "\nThe question should ask what action the user should take."
+            question = get_completion(question_prompt)
+            answer_options = get_completion(f"Generate four answer options for the following question:\n{question}\n")
+            answer_options = answer_options.split("\n")
+
+            output = f"Scenario:\n{scenario}\n\nWhat action should you take?\n\nAnswers:\n"
+
+            for option in answer_options:
+                image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
+                with st.spinner('Generating Image...'):
+                    image_url = generate_image(image_prompt)
+                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"![AI GENERATED IMAGE]({image_url})\n\n"
+
+    elif language == "Français":
+        if "texte brut" in prompt.lower() and "image" in prompt.lower():
+            question = get_completion(f"Traduire en français: {prompt}")
+            answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante:\n{question}\n")
+            answer_options = answer_options.split("\n")
+
+            output = f"Question:\n{question}\n\n"
+
+            for option in answer_options:
+                image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
+                with st.spinner('Génération de l\'image...'):
+                    image_url = generate_image(image_prompt)
+                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
+
+        elif "image de scénario" in prompt.lower():
+            question = get_completion(f"Traduire en français: {prompt}")
+            answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante:\n{question}\n")
+            answer_options = answer_options.split("\n")
+
+            output = f"Question:\n{question}\n\n"
+
+            for option in answer_options:
+                image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
+                with st.spinner('Génération de l\'image...'):
+                    image_url = generate_image(image_prompt)
+                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
+
+        else:
+            scenario = get_completion(f"Traduire en français: {prompt}")
+            question_prompt = "Générer une question pertinente basée sur le scénario suivant:\n" + scenario
+            if "mauvaise" in prompt.lower():
+                question_prompt += "\nLa question devrait demander quelle action l'utilisateur ne devrait PAS prendre."
+            else:
+                question_prompt += "\nLa question devrait demander quelle action l'utilisateur devrait prendre."
+            question = get_completion(question_prompt)
+            answer_options = get_completion(f"Générer quatre options de réponse pour la question suivante:\n{question}\n")
+            answer_options = answer_options.split("\n")
+
+            output = f"Scénario:\n{scenario}\n\nQuelle action devriez-vous prendre?\n\nRéponses:\n"
+
+            for option in answer_options:
+                image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
+                with st.spinner('Génération de l\'image...'):
+                    image_url = generate_image(image_prompt)
+                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
+
+    print("Answer Options:", answer_options)  # Debugging print
     return output
 
-# New functions to handle additional image regenerations based on the previously generated images
+def check_answer(question, answer_options, selected_answer, language):
+    correct_answer = get_completion(f"Which of the following is the correct answer to the question:\n{question}\n{answer_options}")
+    if selected_answer.strip() == correct_answer.strip():
+        if language == "English":
+            return f"Correct!\n\n{get_completion(f'Provide a brief explanation of why \"{selected_answer}\" is the correct answer to the question:\n{question}')}"
+        else:
+            return f"Correct!\n\n{get_completion(f'Fournissez une brève explication de pourquoi \"{selected_answer}\" est la bonne réponse à la question :\n{question}')}"
+    else:
+        if language == "English":
+            return f"Incorrect!\n\n{get_completion(f'Provide a brief explanation of why \"{selected_answer}\" is not the correct answer to the question:\n{question}\n\nThe correct answer is: {correct_answer}')}"
+        else:
+            return f"Incorrect!\n\n{get_completion(f'Fournissez une brève explication de pourquoi \"{selected_answer}\" n\'est pas la bonne réponse à la question :\n{question}\n\nLa bonne réponse est : {correct_answer}')}"
 
-def save_image_from_url(image_url):
-    # Send a GET request to the image URL
-    response = requests.get(image_url)
-    response.raise_for_status()  # Check if the request was successful
-
-    # Open the image from the bytes of the response content
-    with Image.open(io.BytesIO(response.content)) as image:
-        # Use tempfile to create a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-            image.save(tmp_file, 'PNG')
-            print(f"Image saved temporarily at {tmp_file.name}")
-            return tmp_file.name
-
-def regenerate_image(image):
-    response = client.images.create_variation(
-    image=open(image, "rb"),
-    n=1,
-    size="1024x1024"
-    )
-    return response['data'][0]['url']
 
 def main():
     st.title("Cybersecurity Question Generator")
     prompt = st.text_input("Enter a prompt to generate the desired output:")
 
-    # Filer for localization and menu options
     scenarioOptionsList = {
-        'English':{'Scenarios':["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
-        'Français': {'Scenarios':["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
-                 }
+        'English': {'Scenarios': ["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
+        'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
+    }
 
-    # Side panel options
-    desired_language = st.sidebar.radio("Desired language/Langue souhaitée", ["English", "Français"], index = 0)
-    desired_scenario = st.sidebar.selectbox("IT scenario to generate/Scénario informatique à générer", options = scenarioOptionsList[desired_language]['Scenarios'])
-    desired_tone = st.sidebar.selectbox("Desired script tone/Ton de script souhaité", options = scenarioOptionsList[desired_language]['Tones'])
+    desired_language = st.sidebar.radio("Desired language/Langue souhaitée", ["English", "Français"], index=0)
+    desired_scenario = st.sidebar.selectbox("IT scenario to generate/Scénario informatique à générer",
+                                            options=scenarioOptionsList[desired_language]['Scenarios'])
+    desired_tone = st.sidebar.selectbox("Desired script tone/Ton de script souhaité",
+                                        options=scenarioOptionsList[desired_language]['Tones'])
 
     if st.button("Generate Output"):
-        output = generate_question(prompt)
+        output = generate_question(prompt, desired_language)
         st.subheader("Generated Output:")
         st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
 
-    # Need state management to allow for smooth regeneration and for things to not disappear the second a menu option is changed, forcing refresh
+    if "generated_output" not in st.session_state:
+        st.session_state.generated_output = None
+    if "feedback_displayed" not in st.session_state:
+        st.session_state.feedback_displayed = False
+
+    if st.session_state.generated_output:
+        st.subheader("Generated Output:")
+        st.markdown(st.session_state.generated_output, unsafe_allow_html=True)
+
+        answer_options = [option.strip() for option in st.session_state.generated_output.split("\n") if option.startswith("- ")]
+
+        selected_answer = st.radio("Choices:" if desired_language == "English" else "Choix:", answer_options)
+
+        if st.button("Submit" if desired_language == "English" else "Soumettre"):
+            feedback = check_answer(prompt, "\n".join(answer_options), selected_answer, desired_language)
+            if feedback.startswith("Correct"):
+                st.success(feedback)
+            else:
+                st.error(feedback)
+            st.session_state.feedback_displayed = True
+
+    if st.session_state.feedback_displayed:
+        if st.button("Next" if desired_language == "English" else "Suivant"):
+            st.session_state.generated_output = None
+            st.session_state.feedback_displayed = False
+            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
