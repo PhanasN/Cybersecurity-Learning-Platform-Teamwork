@@ -188,7 +188,7 @@ def main():
         'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
     }
 
-    selected_language = st.sidebar.radio(language_labels[selected_language]["language_label"], ["English", "Français"])
+    selected_language = st.sidebar.radio("Language", ["English", "Français"])
     desired_language = "English" if selected_language == "English" else "Français"
 
     desired_scenario_label = "Scenario to Generate" if desired_language == "English" else "Scénario informatique à générer"
@@ -209,4 +209,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
