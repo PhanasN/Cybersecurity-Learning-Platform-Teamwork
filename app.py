@@ -58,7 +58,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
                 with st.spinner('Generating Image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
         elif "scenario image" in prompt.lower():
@@ -72,7 +72,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
                 with st.spinner('Generating Image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n" 
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
         else:
@@ -92,7 +92,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
                 with st.spinner('Generating Image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     elif language == "Français":
@@ -107,7 +107,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
                 with st.spinner('Génération de l\'image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
         elif "image de scénario" in prompt.lower():
@@ -121,7 +121,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
                 with st.spinner('Génération de l\'image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
         else:
@@ -141,7 +141,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
                 with st.spinner('Génération de l\'image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  
+                output += f"{option.strip()}\n"  # Removed numbering
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
     print("Answer Options:", answer_options)  # Debugging print
@@ -165,49 +165,36 @@ def check_answer(question, answer_options, selected_answer, language):
             explanation = get_completion(json.dumps(f'Fournissez une brève explication de pourquoi "{selected_answer}" n\'est pas la bonne réponse à la question :\n{question}\n\nLa bonne réponse est : {correct_answer}'))
             return f"Incorrect!\n\n{explanation}"
 
-import streamlit as st
-
-import streamlit as st
-
 def main():
     language_labels = {
         "English": {
             "title": "Cybersecurity Question Generator",
-            "prompt": "Enter a prompt to generate the desired output:",
-            "language_label": "Language"
+            "prompt": "Enter a prompt to generate the desired output:"
         },
         "Français": {
             "title": "Générateur de Questions de Cybersécurité",
-            "prompt": "Entrez une instruction pour générer la sortie désirée:",
-            "language_label": "Langue"
+            "prompt": "Entrez une instruction pour générer la sortie désirée:"
         }
     }
+
+    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=0)
+    st.title(language_labels[desired_language]["title"])
+    prompt = st.text_input(language_labels[desired_language]["prompt"])
 
     scenarioOptionsList = {
         'English': {'Scenarios': ["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
         'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
     }
 
-    selected_language = st.sidebar.radio("Language", ["English", "Français"])
-    desired_language = "English" if selected_language == "English" else "Français"
-
-    desired_scenario_label = "Scenario to Generate" if desired_language == "English" else "Scénario informatique à générer"
-    desired_tone_label = "Desired Tone" if desired_language == "English" else "Ton de script souhaité"
-
-    desired_scenario = st.sidebar.selectbox(desired_scenario_label,
+    desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
                                             options=scenarioOptionsList[desired_language]['Scenarios'])
-    desired_tone = st.sidebar.selectbox(desired_tone_label,
+    desired_tone = st.sidebar.selectbox("Ton de script souhaité",
                                         options=scenarioOptionsList[desired_language]['Tones'])
 
-    st.title(language_labels[desired_language]["title"])
-    prompt = st.text_input(language_labels[desired_language]["prompt"])
-
-    if st.button("Generate Output" if desired_language == "English" else "Générer la sortie"):
+    if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
         output = generate_question(prompt, desired_language)
-        st.subheader("Generated Output:" if desired_language == "English" else "Sortie Générée:")
+        st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
         st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
 
 if __name__ == "__main__":
     main()
-
-
