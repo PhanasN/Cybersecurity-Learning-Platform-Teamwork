@@ -184,25 +184,25 @@ def main():
         'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
     }
 
-    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=0)
-    st.title(language_labels[desired_language]["title"])
-    prompt = st.text_input(language_labels[desired_language]["prompt"])
-
-    if desired_language == "English":
+       if st.sidebar.radio("Language", ["English", "Français"]) == "English":
+        desired_language = "English"
         desired_scenario = st.sidebar.selectbox("Scenario to Generate",
                                                 options=scenarioOptionsList[desired_language]['Scenarios'])
         desired_tone = st.sidebar.selectbox("Desired Tone",
                                             options=scenarioOptionsList[desired_language]['Tones'])
     else:
+        desired_language = "Français"
         desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
                                                 options=scenarioOptionsList[desired_language]['Scenarios'])
         desired_tone = st.sidebar.selectbox("Ton de script souhaité",
                                             options=scenarioOptionsList[desired_language]['Tones'])
 
+    st.title(language_labels[desired_language]["title"])
+    prompt = st.text_input(language_labels[desired_language]["prompt"])
+
     if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
         output = generate_question(prompt, desired_language)
         st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
         st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
-
 if __name__ == "__main__":
     main()
