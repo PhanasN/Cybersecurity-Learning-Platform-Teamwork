@@ -184,7 +184,7 @@ def main():
         'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
     }
 
-       if st.sidebar.radio("Language", ["English", "Français"]) == "English":
+    if st.sidebar.radio("Language", ["English", "Français"]) == "English":
         desired_language = "English"
         desired_scenario = st.sidebar.selectbox("Scenario to Generate",
                                                 options=scenarioOptionsList[desired_language]['Scenarios'])
@@ -204,5 +204,6 @@ def main():
         output = generate_question(prompt, desired_language)
         st.subheader("Sortie Générée:" if desired_language == "Français" else "Generated Output:")
         st.markdown(output, unsafe_allow_html=True)  # Allow markdown with HTML
+        
 if __name__ == "__main__":
     main()
