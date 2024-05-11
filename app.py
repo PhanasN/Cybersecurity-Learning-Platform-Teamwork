@@ -165,6 +165,8 @@ def check_answer(question, answer_options, selected_answer, language):
             explanation = get_completion(json.dumps(f'Fournissez une brève explication de pourquoi "{selected_answer}" n\'est pas la bonne réponse à la question :\n{question}\n\nLa bonne réponse est : {correct_answer}'))
             return f"Incorrect!\n\n{explanation}"
 
+import streamlit as st
+
 def main():
     language_labels = {
         "English": {
@@ -177,19 +179,25 @@ def main():
         }
     }
 
-    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=0)
-    st.title(language_labels[desired_language]["title"])
-    prompt = st.text_input(language_labels[desired_language]["prompt"])
-
     scenarioOptionsList = {
         'English': {'Scenarios': ["English 1", "English 2"], 'Tones': ["Casual", "Professional"]},
         'Français': {'Scenarios': ["French 1", "French 2"], 'Tones': ["FCasual", "FProfessional"]}
     }
 
-    desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
-                                            options=scenarioOptionsList[desired_language]['Scenarios'])
-    desired_tone = st.sidebar.selectbox("Ton de script souhaité",
-                                        options=scenarioOptionsList[desired_language]['Tones'])
+    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=0)
+    st.title(language_labels[desired_language]["title"])
+    prompt = st.text_input(language_labels[desired_language]["prompt"])
+
+    if desired_language == "English":
+        desired_scenario = st.sidebar.selectbox("Scenario to Generate",
+                                                options=scenarioOptionsList[desired_language]['Scenarios'])
+        desired_tone = st.sidebar.selectbox("Desired Tone",
+                                            options=scenarioOptionsList[desired_language]['Tones'])
+    else:
+        desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
+                                                options=scenarioOptionsList[desired_language]['Scenarios'])
+        desired_tone = st.sidebar.selectbox("Ton de script souhaité",
+                                            options=scenarioOptionsList[desired_language]['Tones'])
 
     if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
         output = generate_question(prompt, desired_language)
