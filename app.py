@@ -191,6 +191,7 @@ def main():
         desired_tone = st.sidebar.selectbox("Desired Tone",
                                             options=scenarioOptionsList[desired_language]['Tones'])
     else:
+        st.sidebar.radio("Langue", ["English", "Français"]) == "Français":
         desired_language = "Français"
         desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
                                                 options=scenarioOptionsList[desired_language]['Scenarios'])
