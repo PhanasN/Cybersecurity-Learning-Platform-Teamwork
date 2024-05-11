@@ -58,7 +58,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
                 with st.spinner('Generating Image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"{option.strip()}\n"  
                 output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
         elif "scenario image" in prompt.lower():
@@ -72,7 +72,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
                 with st.spinner('Generating Image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"{option.strip()}\n" 
                 output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
         else:
@@ -92,7 +92,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Generate an image illustrating the answer option: {option.strip()}"
                 with st.spinner('Generating Image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"{option.strip()}\n"  
                 output += f"![AI GENERATED IMAGE]({image_url})\n\n"
 
     elif language == "Français":
@@ -107,7 +107,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
                 with st.spinner('Génération de l\'image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"{option.strip()}\n"  
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
         elif "image de scénario" in prompt.lower():
@@ -121,7 +121,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
                 with st.spinner('Génération de l\'image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"{option.strip()}\n"  
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
         else:
@@ -141,7 +141,7 @@ def generate_question(prompt, language):
                 image_prompt = f"Générer une image illustrant l'option de réponse: {option.strip()}"
                 with st.spinner('Génération de l\'image...'):
                     image_url = generate_image(image_prompt)
-                output += f"{option.strip()}\n"  # Removed numbering
+                output += f"{option.strip()}\n"  
                 output += f"![IMAGE GÉNÉRÉE PAR L'IA]({image_url})\n\n"
 
     print("Answer Options:", answer_options)  # Debugging print
