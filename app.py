@@ -192,11 +192,11 @@ def main():
                                             options=scenarioOptionsList[desired_language]['Tones'])
     else:
         if st.sidebar.radio("Langue", ["English", "Français"]) == "Français":
-        desired_language = "Français"
-        desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
-                                                options=scenarioOptionsList[desired_language]['Scenarios'])
-        desired_tone = st.sidebar.selectbox("Ton de script souhaité",
-                                            options=scenarioOptionsList[desired_language]['Tones'])
+            desired_language = "Français"
+            desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
+                                                    options=scenarioOptionsList[desired_language]['Scenarios'])
+            desired_tone = st.sidebar.selectbox("Ton de script souhaité",
+                                                options=scenarioOptionsList[desired_language]['Tones'])
 
     st.title(language_labels[desired_language]["title"])
     prompt = st.text_input(language_labels[desired_language]["prompt"])
