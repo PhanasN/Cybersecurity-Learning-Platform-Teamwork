@@ -18,19 +18,24 @@ client = OpenAI(api_key=api_key)
 
 # Get translator
 def translate_text(text, target_language):
-    translator = Translator()
-    if isinstance(text, list):  
-        if target_language == "Français":
-            translated_texts = [translator.translate(single_text, src='en', dest='fr').text for single_text in text]
-            return translated_texts
+    try:
+        translator = Translator()
+        if isinstance(text, list):  
+            if target_language == "Français":
+                translated_texts = [translator.translate(single_text, src='en', dest='fr').text for single_text in text]
+                return translated_texts
+            else:
+                return text
         else:
-            return text
-    else:
-        if target_language == "Français":
-            translated_text = translator.translate(text, src='en', dest='fr').text
-            return translated_text
-        else: 
-            return text
+            if target_language == "Français":
+                translated_text = translator.translate(text, src='en', dest='fr').text
+                return translated_text
+            else: 
+                return text
+    except Exception as e:
+        print(f"Error occurred while creating Translator instance: {e}")
+        return None
+
 
 # Defining Helper Functions
 
