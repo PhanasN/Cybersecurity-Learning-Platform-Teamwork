@@ -37,8 +37,6 @@ def translate_text(text, target_language):
 
 # Defining Helper Functions
 
-# Defining Helper Functions
-
 def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
     # TODO Add "Custom" Logic (e.g. assume they pasted in a scenario and want to be make questions based on that.) Ensure French and English match
      promptOptionList = {
@@ -86,34 +84,12 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
                 validated_output = True
     return [response.choices[0].message.content.strip(), response.id]
 
-
-    # Validation of Format Check
-    validated_output = False
-    keyOptions = {"English":{"Plain text multiple choice":["Question", "A", "B", "C", "D", "Correct Answer"], "Image-based":["Question", "A", "B", "C", "D", "Incorrect Answer"]},
-                  "Français": {"Choix multiple en texte brut":["Question", "A", "B", "C", "D", "Bonne réponse"], "Basé sur l'image":["Question", "A", "B", "C", "D", "Réponse incorrecte"]}}
-    with st.spinner("Checking output..."):
-        validation_failure = False
-        keys = keyOptions[selected_language][selected_quiz_type]
-        while not validated_output:
-            test_dict = json.loads(response.choices[0].message.content.strip())
-            for key in keys:
-                if key not in test_dict:
-                    st.error("Invalid Format Detected, regenerating.")
-                    validation_failure = True
-                    break 
-            if not validation_failure:
-                st.success("Format validated!")
-                sleep(2)
-                validated_output = True
-    return [response.choices[0].message.content.strip(), response.id]
-
 def generate_image(question_options, selected_language):
     image_links = []
   
     # TODO Update French Image Prompt
   
-    image_user_prompts = {"English":"Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: {quiz_option}",
-                          "Français":"Concevez une illustration de dessin animé représentant des robots experts en technologie collaborant dans un environnement de bureau d'entreprise animé, inspirée de l'action liée à l'informatique:"}
+    image_user_prompts = translate_text("Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: {quiz_option}")
     
     base_user_prompt = image_user_prompts[selected_language]
     for choice in ["A", "B", "C", "D"]: 
@@ -130,10 +106,9 @@ def generate_image(question_options, selected_language):
 
 def regenerate_image(current_images, current_descriptions, images_to_regen, current_language):
     mapping = {"A": 0, "B": 1, "C": 2, "D": 3}
-    image_user_prompts = {"English":"Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: ",
-                          "Français":"Concevez une illustration de dessin animé représentant des robots experts en technologie collaborant dans un environnement de bureau d'entreprise animé, inspirée de l'action liée à l'informatique:"}
+    image_user_prompts = translate_text("Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: ")
     base_user_prompt = image_user_prompts[current_language]
-    with st.spinner("Regenerating images, thank you for your patience..."):
+    with st.spinner(translate_text("Regenerating images, thank you for your patience...")):
         for i, image in enumerate(images_to_regen):
             combo_user_prompt = f"{base_user_prompt} {current_descriptions[image]}"
             response = client.images.generate( 
@@ -147,10 +122,10 @@ def regenerate_image(current_images, current_descriptions, images_to_regen, curr
     return current_images
 
 def sidebar_handler(current_option, scenarioList, current_language):
-    if current_option == "Custom" or current_option == "Coutume":
-        desired_scenario= st.sidebar.text_area("Enter a prompt here")
+    if current_option == translate_text("Custom"):
+        desired_scenario= st.sidebar.text_area(translate_text("Enter a prompt here"))
     else:
-        desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
+        desired_scenario = st.sidebar.selectbox(translate_text("Scenario to generate"),
                                             options=scenarioList[current_language]['Scenarios'])
     return desired_scenario
 
@@ -223,25 +198,17 @@ def create_sample_zip(images, json_data):
 
 def main():
     language_labels = {
-        "English": {
+        translate_text(
             "title": "Cybersecurity Question Generator",
             "prompt": "Enter a prompt to generate the desired output:",
-            "initial instructions": "Select your options from the left, once complete, your custom item(s) will be generated below"
-        },
-        "Français": {
-            "title": "Générateur de Questions de Cybersécurité",
-            "prompt": "Entrez une instruction pour générer la sortie désirée:",
-            "initial instructions": "Sélectionnez vos options à gauche, une fois terminé, vos articles personnalisés seront générés ci-dessous"
-        }
-    }
-
+            "initial instructions": "Select your options from the left, once complete, your custom item(s) will be generated below")
+    
     desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=1)
 
     scenarioOptionsList = {
-        'English': {'Scenarios': ["phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers"], 'Tones': ["Casual", "Professional"], 'Quiz Types': ["Plain text multiple choice", "Image-based", "Custom"]},
-        'Français': {'Scenarios': ["attaques de phishing", "l'hameçonnage ciblé", "l'ingénierie sociale", "rançongiciels", "fraude au PDG", "l'appâtage", "l'écoute clandestine", "réutilisation de mot de passe", "imprimantes non sécurisées", "logiciels obsolètes", "entrepreneurs convaincants", "hackers utiles"], 'Tones': ["Décontracté", "Professionnel"], 'Quiz Types': ["Choix multiple en texte brut", "Basé sur l'image", "Coutume"]}
+        'Scenarios': translate_text[("phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers"], 'Tones': ["Casual", "Professional"], 'Quiz Types': ["Plain text multiple choice", "Image-based", "Custom")]
     }
-    desired_quiz = st.sidebar.selectbox("Type de quiz souhaité", options = scenarioOptionsList[desired_language]['Quiz Types'])
+    desired_quiz = st.sidebar.selectbox(translate_text("Desired type of quiz"), options = scenarioOptionsList[desired_language]['Quiz Types'])
     desired_scenario = sidebar_handler(desired_quiz, scenarioOptionsList, desired_language)
 
     st.title(language_labels[desired_language]["title"])
