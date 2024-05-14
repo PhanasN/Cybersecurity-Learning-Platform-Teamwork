@@ -39,7 +39,7 @@ def translate_text(text, target_language):
 
 def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
     # TODO Add "Custom" Logic (e.g. assume they pasted in a scenario and want to be make questions based on that.) Ensure French and English match
-     promptOptionList = {
+    promptOptionList = {
         translate_text('Plain text multiple choice'): translate_text(f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", selected_language), 
         translate_text('Image-based'): translate_text(f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option.", selected_language)
     }
