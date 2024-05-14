@@ -200,9 +200,11 @@ def create_sample_zip(images, json_data):
 
 def main():
     language_labels = {
-            "title": translate_text("Cybersecurity Question Generator"),
-            "prompt": translate_text("Enter a prompt to generate the desired output:"),
-            "initial instructions": translate_text("Select your options from the left, once complete, your custom item(s) will be generated below")}
+        "title": translate_text("Cybersecurity Question Generator"),
+        "prompt": translate_text("Enter a prompt to generate the desired output:"),
+        "initial instructions": translate_text("Select your options from the left, once complete, your custom item(s) will be generated below")
+    }
+
     
     desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=1)
 
