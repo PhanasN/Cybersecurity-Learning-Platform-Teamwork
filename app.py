@@ -10,45 +10,82 @@ import tempfile
 from time import sleep
 import requests
 from io import BytesIO
+from googletrans import Translator
 
 # General Housekeeping
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY") 
 client = OpenAI(api_key=api_key)
 
+# Call the OpenAI API translator
+def translate_text(text, target_language):
+    if isinstance(text, list):  # Check if the input is a list
+        if target_language == "Français":
+            # Call the OpenAI API translator to translate the list of texts to French
+            translated_texts = [call_translation_api(single_text, "en", "fr") for single_text in text]
+            return translated_texts
+        else:
+            # Return the original list of texts for other languages
+            return text
+    else:
+        if target_language == "Français":
+            # Call the OpenAI API translator to translate the single text to French
+            translated_text = call_translation_api(text, "en", "fr")
+            return translated_text
+        else: 
+            # Return the original text for other languages
+            return text
+
+# Defining Helper Functions
 
 # Defining Helper Functions
 
 def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
-    promptOptionList = {
-        # TODO Add "Custom" Logic (e.g. assume they pasted in a scenario and want to be make questions based on that.) Ensure French and English match
-        'English': {'Plain text multiple choice': f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", 
-                    'Image-based': f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option."},
-        'Français': {'Choix multiple en texte brut': f"Créez une question à choix multiples basée sur un scénario sur {selected_category} avec quatre options et une seule réponse correcte. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Bonne réponse ». Pour la touche 'Réponse correcte', la valeur doit être la lettre correspondant à l'option correcte.", 
-                    "Basé sur l'image": f"Générez une question basée sur un scénario sur {selected_category} dans laquelle l'utilisateur doit sélectionner l'action ou la réponse incorrecte parmi quatre images. Une seule description d’image doit correspondre à une action incorrecte. Toutes les autres options doivent constituer une réponse appropriée mais ne doivent pas justifier pourquoi elles sont correctes. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Réponse incorrecte ». Pour la touche « Réponse incorrecte », la valeur doit être la lettre correspondant à l'option incorrecte."}
+    # TODO Add "Custom" Logic (e.g. assume they pasted in a scenario and want to be make questions based on that.) Ensure French and English match
+     promptOptionList = {
+        translate_text('Plain text multiple choice'): translate_text(f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", selected_language), 
+        translate_text('Image-based'): translate_text(f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option.", selected_language)
     }
     systemPromptOptionList = {
-        'English': "You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.",
-        'Français': "Vous êtes un expert en cybersécurité informatique et spécialisé dans la création de contenu utile destiné aux utilisateurs finaux. Lors de la création de contenu, ne répétez pas les exemples précédents."
+        translate_text("You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.")
     }
     if previous_response == None:
         messages = [{"role": "user", "content": promptOptionList[selected_language][selected_quiz_type]},
                     {"role": "system", "content": systemPromptOptionList[selected_language]}]
     else:
         extra_context = {
-            'English': f"Your previous response was {previous_response}",
-            'Français': f"Votre réponse précédente était: {previous_response}"
+            translate_text(f"Your previous response was: {previous_response}")
         }
         content = promptOptionList[selected_language][selected_quiz_type] + extra_context[selected_language]
         messages = [{"role": "user", "content": promptOptionList[selected_language][selected_quiz_type]},
                     {"role": "system", "content": content}]
         
-    with st.spinner("Generating content..."):
+    with st.spinner(translate_text("Generating content...")):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
             temperature = 0.1,
             response_format={"type": "json_object"},
         )
+
+    # Validation of Format Check
+    validated_output = False
+    keyOptions = {translate_text("Plain text multiple choice":["Question", "A", "B", "C", "D", "Correct Answer"], "Image-based":["Question", "A", "B", "C", "D", "Incorrect Answer")]}
+    with st.spinner(translate_text("Checking output...")):
+        validation_failure = False
+        keys = keyOptions[selected_language][selected_quiz_type]
+        while not validated_output:
+            test_dict = json.loads(response.choices[0].message.content.strip())
+            for key in keys:
+                if key not in test_dict:
+                    st.error("Invalid Format Detected, regenerating.")
+                    validation_failure = True
+                    break 
+            if not validation_failure:
+                st.success("Format validated!")
+                sleep(2)
+                validated_output = True
+    return [response.choices[0].message.content.strip(), response.id]
+
 
     # Validation of Format Check
     validated_output = False
