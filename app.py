@@ -206,7 +206,7 @@ def main():
     desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=1)
 
     scenarioOptionsList = {
-        'Scenarios': translate_text[("phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers"], 'Tones': ["Casual", "Professional"], 'Quiz Types': ["Plain text multiple choice", "Image-based", "Custom")]
+        'Scenarios': [translate_text("phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers")], 'Tones': [translate_text("Casual", "Professional"], 'Quiz Types': ["Plain text multiple choice", "Image-based", "Custom")]
     }
     desired_quiz = st.sidebar.selectbox(translate_text("Desired type of quiz"), options = scenarioOptionsList[desired_language]['Quiz Types'])
     desired_scenario = sidebar_handler(desired_quiz, scenarioOptionsList, desired_language)
