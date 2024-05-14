@@ -16,48 +16,42 @@ from googletrans import Translator
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY") 
 client = OpenAI(api_key=api_key)
 
-# Call the OpenAI API translator
-def translate_text(text, target_language):
-    if isinstance(text, list):  # Check if the input is a list
-        if target_language == "Français":
-            # Call the OpenAI API translator to translate the list of texts to French
-            translated_texts = [call_translation_api(single_text, "en", "fr") for single_text in text]
-            return translated_texts
-        else:
-            # Return the original list of texts for other languages
-            return text
+def call_translation_api(text, source_lang, target_lang):
+    translator = Translator()
+    if isinstance(text, list):
+        translated_texts = []
+        for single_text in text:
+            translated_text = translator.translate(single_text, src=source_lang, dest=target_lang)
+            translated_texts.append(translated_text.text)
+        return translated_texts
     else:
-        if target_language == "Français":
-            # Call the OpenAI API translator to translate the single text to French
-            translated_text = call_translation_api(text, "en", "fr")
-            return translated_text
-        else: 
-            # Return the original text for other languages
-            return text
+        translated_text = translator.translate(text, src=source_lang, dest=target_lang)
+        return translated_text.text
+
 
 # Defining Helper Functions
 
 def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
     # TODO Add "Custom" Logic (e.g. assume they pasted in a scenario and want to be make questions based on that.) Ensure French and English match
     promptOptionList = {
-        translate_text('Plain text multiple choice'): translate_text(f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", selected_language), 
-        translate_text('Image-based'): translate_text(f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option.", selected_language)
+        call_translation_api('Plain text multiple choice'): call_translation_api(f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", selected_language), 
+        call_translation_api('Image-based'): call_translation_api(f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option.", selected_language)
     }
     systemPromptOptionList = {
-        translate_text("You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.")
+        call_translation_api("You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.")
     }
     if previous_response == None:
         messages = [{"role": "user", "content": promptOptionList[selected_language][selected_quiz_type]},
                     {"role": "system", "content": systemPromptOptionList[selected_language]}]
     else:
         extra_context = {
-            translate_text(f"Your previous response was: {previous_response}")
+            call_translation_api(f"Your previous response was: {previous_response}")
         }
         content = promptOptionList[selected_language][selected_quiz_type] + extra_context[selected_language]
         messages = [{"role": "user", "content": promptOptionList[selected_language][selected_quiz_type]},
                     {"role": "system", "content": content}]
         
-    with st.spinner(translate_text("Generating content...")):
+    with st.spinner(call_translation_api("Generating content...")):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
@@ -67,10 +61,10 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
 
     # Validation of Format Check
     validated_output = False
-    keyOptions = translate_text({
+    keyOptions = call_translation_api({
     "Plain text multiple choice": ["Question", "A", "B", "C", "D", "Correct Answer"], 
     "Image-based": ["Question", "A", "B", "C", "D", "Incorrect Answer"]})
-    with st.spinner(translate_text("Checking output...")):
+    with st.spinner(call_translation_api("Checking output...")):
         validation_failure = False
         keys = keyOptions[selected_language][selected_quiz_type]
         while not validated_output:
@@ -91,7 +85,7 @@ def generate_image(question_options, selected_language):
   
     # TODO Update French Image Prompt
   
-    image_user_prompts = translate_text("Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: {quiz_option}")
+    image_user_prompts = call_translation_api("Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: {quiz_option}")
     
     base_user_prompt = image_user_prompts[selected_language]
     for choice in ["A", "B", "C", "D"]: 
@@ -108,9 +102,9 @@ def generate_image(question_options, selected_language):
 
 def regenerate_image(current_images, current_descriptions, images_to_regen, current_language):
     mapping = {"A": 0, "B": 1, "C": 2, "D": 3}
-    image_user_prompts = translate_text("Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: ")
+    image_user_prompts = call_translation_api("Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: ")
     base_user_prompt = image_user_prompts[current_language]
-    with st.spinner(translate_text("Regenerating images, thank you for your patience...")):
+    with st.spinner(call_translation_api("Regenerating images, thank you for your patience...")):
         for i, image in enumerate(images_to_regen):
             combo_user_prompt = f"{base_user_prompt} {current_descriptions[image]}"
             response = client.images.generate( 
@@ -124,10 +118,10 @@ def regenerate_image(current_images, current_descriptions, images_to_regen, curr
     return current_images
 
 def sidebar_handler(current_option, scenarioList, current_language):
-    if current_option == translate_text("Custom"):
-        desired_scenario= st.sidebar.text_area(translate_text("Enter a prompt here"))
+    if current_option == call_translation_api("Custom"):
+        desired_scenario= st.sidebar.text_area(call_translation_api("Enter a prompt here"))
     else:
-        desired_scenario = st.sidebar.selectbox(translate_text("Scenario to generate"),
+        desired_scenario = st.sidebar.selectbox(call_translation_api("Scenario to generate"),
                                             options=scenarioList[current_language]['Scenarios'])
     return desired_scenario
 
@@ -200,17 +194,17 @@ def create_sample_zip(images, json_data):
 
 def main():
     language_labels = {
-        "title": translate_text("Cybersecurity Question Generator"),
-        "prompt": translate_text("Enter a prompt to generate the desired output:"),
-        "initial instructions": translate_text("Select your options from the left, once complete, your custom item(s) will be generated below")
+        "title": call_translation_api("Cybersecurity Question Generator"),
+        "prompt": call_translation_api("Enter a prompt to generate the desired output:"),
+        "initial instructions": call_translation_api("Select your options from the left, once complete, your custom item(s) will be generated below")
     }
 
-    desired_language = st.sidebar.radio(translate_text("Desired language"), ["English", "Français"], index=1)
+    desired_language = st.sidebar.radio(call_translation_api("Desired language"), ["English", "Français"], index=1)
 
     scenarioOptionsList = {
-        'Scenarios': [translate_text("phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers")], 'Tones': [translate_text("Casual", "Professional")], 'Quiz Types': [translate_text("Plain text multiple choice", "Image-based", "Custom")]
+        'Scenarios': [call_translation_api("phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers")], 'Tones': [call_translation_api("Casual", "Professional")], 'Quiz Types': [call_translation_api("Plain text multiple choice", "Image-based", "Custom")]
     }
-    desired_quiz = st.sidebar.selectbox(translate_text("Desired type of quiz"), options = scenarioOptionsList[desired_language]['Quiz Types'])
+    desired_quiz = st.sidebar.selectbox(call_translation_api("Desired type of quiz"), options = scenarioOptionsList[desired_language]['Quiz Types'])
     desired_scenario = sidebar_handler(desired_quiz, scenarioOptionsList, desired_language)
 
     st.title(language_labels[desired_language]["title"])
