@@ -205,8 +205,7 @@ def main():
         "initial instructions": translate_text("Select your options from the left, once complete, your custom item(s) will be generated below")
     }
 
-    
-    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=1)
+    desired_language = st.sidebar.radio(translate_text("Desired language"), ["English", "Français"], index=1)
 
     scenarioOptionsList = {
         'Scenarios': [translate_text("phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers")], 'Tones': [translate_text("Casual", "Professional")], 'Quiz Types': [translate_text("Plain text multiple choice", "Image-based", "Custom")]
