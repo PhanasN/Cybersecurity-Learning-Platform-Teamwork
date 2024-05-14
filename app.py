@@ -67,7 +67,7 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
 
     # Validation of Format Check
     validated_output = False
-    keyOptions = translate_text("Plain text multiple choice"):[translate_text("Question", "A", "B", "C", "D", "Correct Answer"], translate_text(("Image-based"):[translate_text(("Question", "A", "B", "C", "D", "Incorrect Answer")]
+    keyOptions = translate_text("Plain text multiple choice"):[translate_text("Question", "A", "B", "C", "D", "Correct Answer")], translate_text(("Image-based"):[translate_text(("Question", "A", "B", "C", "D", "Incorrect Answer")]
     with st.spinner(translate_text("Checking output...")):
         validation_failure = False
         keys = keyOptions[selected_language][selected_quiz_type]
