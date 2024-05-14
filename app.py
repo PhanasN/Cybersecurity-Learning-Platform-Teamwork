@@ -1,9 +1,6 @@
 import streamlit as st
 from openai import OpenAI
 import os
-import streamlit as st
-from openai import OpenAI
-import os
 from PIL import Image
 import json
 import os
@@ -15,9 +12,7 @@ import requests
 from io import BytesIO
 
 # General Housekeeping
-
-
-api_key = "CYBERSECURITY_OPENAI_API_KEY"  # Used in production
+api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY") 
 client = OpenAI(api_key=api_key)
 
 
@@ -25,6 +20,7 @@ client = OpenAI(api_key=api_key)
 
 def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
     promptOptionList = {
+        # TODO Add "Custom" Logic (e.g. assume they pasted in a scenario and want to be make questions based on that.) Ensure French and English match
         'English': {'Plain text multiple choice': f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", 
                     'Image-based': f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option."},
         'Français': {'Choix multiple en texte brut': f"Créez une question à choix multiples basée sur un scénario sur {selected_category} avec quatre options et une seule réponse correcte. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Bonne réponse ». Pour la touche 'Réponse correcte', la valeur doit être la lettre correspondant à l'option correcte.", 
@@ -67,31 +63,27 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
                 if key not in test_dict:
                     st.error("Invalid Format Detected, regenerating.")
                     validation_failure = True
-                    print(json.loads(response.choices[0].message.content.strip())) # TODO Remove, Testing only
-                    sleep(5) # TODO Remove, Testing only
                     break 
             if not validation_failure:
                 st.success("Format validated!")
                 sleep(2)
                 validated_output = True
-
-    print("Done!") # TODO Remove, Testing only
     return [response.choices[0].message.content.strip(), response.id]
 
 def generate_image(question_options, selected_language):
     image_links = []
-    image_user_prompts = {"English":"Design a cartoon illustration in a pop art style featuring robots collaborating in a corporate office environment and utilizing technology like phones and computers. While avoiding text-based representations, the image should correspond to the following IT-related action:",
+  
+    # TODO Update French Image Prompt
+  
+    image_user_prompts = {"English":"Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: {quiz_option}",
                           "Français":"Concevez une illustration de dessin animé représentant des robots experts en technologie collaborant dans un environnement de bureau d'entreprise animé, inspirée de l'action liée à l'informatique:"}
-    image_system_prompts = {"English":"Let's create a vibrant and lively scene with our color choices! Think of bold and dynamic hues that evoke energy and excitement. Remember, we're avoiding text to focus solely on colorful visuals.",
-                             "Français":"Créons une scène vibrante et vivante avec nos choix de couleurs! Pensez à des teintes audacieuses et dynamiques qui évoquent l’énergie et l’excitation. N'oubliez pas que nous évitons le texte pour nous concentrer uniquement sur des visuels colorés."}
+    
     base_user_prompt = image_user_prompts[selected_language]
-    system_prompt = image_system_prompts[selected_language]
-    for choice in ["A", "B"]: # TODO ADD C and D - A and B only for testing
+    for choice in ["A", "B", "C", "D"]: 
         question_option = json.loads(question_options)[choice]
         combo_user_prompt = f"{base_user_prompt} {question_option}"
-        print(combo_user_prompt) # TODO Remove, Testing Only
-        response = client.images.generate(
-            model="dall-e-2",
+        response = client.images.generate( 
+            model="dall-e-3",
             prompt=combo_user_prompt,
             quality="standard",
             n=1,
@@ -99,8 +91,23 @@ def generate_image(question_options, selected_language):
         image_links.append(response.data[0].url)
     return image_links
 
-def regenerate_image(current_images, images_to_regen):
-    pass
+def regenerate_image(current_images, current_descriptions, images_to_regen, current_language):
+    mapping = {"A": 0, "B": 1, "C": 2, "D": 3}
+    image_user_prompts = {"English":"Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: ",
+                          "Français":"Concevez une illustration de dessin animé représentant des robots experts en technologie collaborant dans un environnement de bureau d'entreprise animé, inspirée de l'action liée à l'informatique:"}
+    base_user_prompt = image_user_prompts[current_language]
+    with st.spinner("Regenerating images, thank you for your patience..."):
+        for i, image in enumerate(images_to_regen):
+            combo_user_prompt = f"{base_user_prompt} {current_descriptions[image]}"
+            response = client.images.generate( 
+                model="dall-e-3",
+                prompt=combo_user_prompt,
+                quality="standard",
+                n=1,
+            )
+            current_images[mapping[image]] = response.data[0].url
+    
+    return current_images
 
 def sidebar_handler(current_option, scenarioList, current_language):
     if current_option == "Custom" or current_option == "Coutume":
@@ -110,51 +117,70 @@ def sidebar_handler(current_option, scenarioList, current_language):
                                             options=scenarioList[current_language]['Scenarios'])
     return desired_scenario
 
+def download_and_store_images(image_links):
+    image_paths = []
+    for index, image_link in enumerate(image_links):
+        try:
+            # Download the image from the URL
+            with requests.get(image_link) as response:
+                response.raise_for_status()  # Will raise an exception for 4XX/5XX status codes
+
+                # Create a named temporary file to save the image
+                with tempfile.NamedTemporaryFile(suffix=f"_choice_{index+1}.png", delete=False) as temp_file:
+                    # Write the image content to the temporary file
+                    temp_file.write(response.content)
+                    temp_file_path = temp_file.name
+
+                # Adding to List
+                image_paths.append(temp_file_path)
+                
+        except requests.RequestException as e:
+            print(f"Failed to download the image from {image_link}: {e}")
+            continue
+        except IOError as e:
+            print(f"Error writing file for {image_link}: {e}")
+            continue
+
+    return image_paths
+
 def create_sample_json(json_data):
-    # Create a temporary file
-    with tempfile.TemporaryFile(mode='w+', suffix= ".json", delete=False) as temp_file:
+    # Create a named temporary file
+    with tempfile.NamedTemporaryFile(mode='w+', suffix=".json", delete=False) as temp_file:
         # Write the JSON data to the file
-        json.dump(json_data, temp_file)
-    
-    # Get the path of the temporary file
-    file_path = temp_file.name
-    
+        json.dump(json.loads(json_data), temp_file)
+        # Save the path of the temporary file
+        file_path = temp_file.name
+
+    # The file will persist after closing the block, so it can be accessed later
     return file_path
 
 # TODO Make this the primary function so that the one above is gone.
     
 def create_sample_zip(images, json_data):
+    # Create a named temporary file for JSON with automatic deletion
+    with tempfile.NamedTemporaryFile(mode='w+', suffix="_question_answers.json", delete=False) as temp_json_file:
+        json.dump(json.loads(json_data), temp_json_file)
+        temp_json_path = temp_json_file.name
 
-    # Create a json temporary file
-    with tempfile.TemporaryFile(mode='w+', suffix= "_question_answers.json", delete=False) as temp_file:
-        # Write the JSON data to the file
-        json.dump(json_data, temp_file)
-    
-    # Get the path of the temporary file
-    file_path = temp_file.name
-    
-    # Create a temporary directory
-    temp_dir_2 = tempfile.TemporaryDirectory()
+    # Create a temporary directory to hold the images and JSON file
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Copy image files to the temporary directory
+        for image_path in images:
+            shutil.copy(image_path, temp_dir)
+        # Copy JSON file to the temporary directory
+        shutil.copy(temp_json_path, temp_dir)
 
-    # Example image and text files
-    image_paths = images
+        # Zip the directory
+        zip_file_path = "sample_files.zip"
+        with ZipFile(zip_file_path, 'w') as zipf:
+            for root, _, files in os.walk(temp_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arc_name = os.path.relpath(file_path, temp_dir)
+                    zipf.write(file_path, arc_name)
 
-    # Save images and text files into the temporary directory
-    for image_path in image_paths:
-        shutil.copy(image_path, temp_dir_2.name)
-    shutil.copy(file_path, temp_dir_2.name)
-
-    # Zip the directory
-    zip_file_path = "sample_files.zip"
-    with ZipFile(zip_file_path, "w") as zipf:
-        for root, _, files in os.walk(temp_dir_2.name):
-            for file in files:
-                zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), temp_dir_2.name))
-
-    # Delete the temporary directory
-    shutil.rmtree(temp_dir_2.name)
-
-    os.remove(file_path)
+    # Clean up the temporary JSON file explicitly
+    os.remove(temp_json_path)
 
     return zip_file_path
 
@@ -162,15 +188,17 @@ def main():
     language_labels = {
         "English": {
             "title": "Cybersecurity Question Generator",
-            "prompt": "Enter a prompt to generate the desired output:"
+            "prompt": "Enter a prompt to generate the desired output:",
+            "initial instructions": "Select your options from the left, once complete, your custom item(s) will be generated below"
         },
         "Français": {
             "title": "Générateur de Questions de Cybersécurité",
-            "prompt": "Entrez une instruction pour générer la sortie désirée:"
+            "prompt": "Entrez une instruction pour générer la sortie désirée:",
+            "initial instructions": "Sélectionnez vos options à gauche, une fois terminé, vos articles personnalisés seront générés ci-dessous"
         }
     }
 
-    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=0)
+    desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=1)
 
     scenarioOptionsList = {
         'English': {'Scenarios': ["phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers"], 'Tones': ["Casual", "Professional"], 'Quiz Types': ["Plain text multiple choice", "Image-based", "Custom"]},
@@ -180,6 +208,8 @@ def main():
     desired_scenario = sidebar_handler(desired_quiz, scenarioOptionsList, desired_language)
 
     st.title(language_labels[desired_language]["title"])
+
+    # TODO The below state initialization can be collapsed into 4 lines, based on lists and creating new st.session_state[key] = initial_state calls
                                       
     # Initialize session state variables if they don't exist
     if "generated_output" not in st.session_state:
@@ -196,9 +226,15 @@ def main():
         st.session_state.generated_images = None
     if "generated_descriptions" not in st.session_state:
         st.session_state.generated_descriptions = None
+    if "export_generated" not in st.session_state:
+        st.session_state.export_generated = None
+    if "download_complete" not in st.session_state:
+        st.session_state.download_complete = False
+    if "regeneration_requested" not in st.session_state:
+        st.session_state.regeneration_requested = False
  
     if st.session_state.generated_output == None:
-        st.write("Select your options from the left, once complete, your custom item(s) will be generated below")
+        st.write(language_labels[desired_language][""initial instructions"])
        
         if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
             complete_response = generate_question(desired_language, desired_quiz, desired_scenario, st.session_state.generated_output)
@@ -209,17 +245,17 @@ def main():
 
     if st.session_state.generated_output:
 
-        # TODO Refactor into a generic function that is called based on current state, dictated by language + quiz_type
+        # TODO Refactor into a generic function that is called based on current state, dictated by language + quiz_type. Sidepanel should disappear after first generation to avoid cross-language issues. 
 
         if desired_quiz in ["Plain text multiple choice", "Choix multiple en texte brut"]: # TODO Fix to become session state dependent - edge case around swapping choices mid-stream
             current_options = []
-            st.subheader("Generated Output:")
+            st.subheader("Sortie générée:")
             st.write(json.loads(st.session_state.generated_output)["Question"])
             #Add condition here for checking if image quiz or multiple choice only.
             for choice in ["A", "B", "C", "D"]:
                 current_options.append(json.loads(st.session_state.generated_output)[choice])
             # Display each choice as a selectable multiple choice item
-            user_choice = st.radio("Choices/Les choix:", options = current_options)
+            user_choice = st.radio("Les choix:", options = current_options)
 
             if st.button("Regenerate" if desired_language == "English" else "Régénérer"):
                 complete_response = generate_question(desired_language, desired_quiz, desired_scenario, st.session_state.generated_output)
@@ -234,15 +270,21 @@ def main():
                 st.rerun()
 
             if st.button("Export" if desired_language == "English" else "Exporter"):
+                # TODO Add state management here for the generated output so the file is only created once. 
+                
                 sample_file_path = create_sample_json(st.session_state.generated_output)
-                with open(sample_file_path, "rb") as file:
+                with open(sample_file_path, "w+b") as file:
                     file_contents = file.read()
-                st.download_button(label="Download", data=file_contents, file_name="sample_file.json", mime="application/json")
-                # Clean up: Delete the temporary directory and its contents
-                os.remove(sample_file_path)
-                os.rmdir(os.path.dirname(sample_file_path))
-            else:
-                pass
+                if st.download_button(label="Download", data=file_contents, file_name="sample_file.json", mime="application/json"):
+                    st.session_state.download_complete = True
+                if st.session_state.download_complete == True:
+                    # Image Cleanup
+                    for image_path in image_paths:
+                        os.remove(image_path)
+                    # Clean up: Delete the temporary directory and its contents
+                    os.remove(sample_file_path)
+                    os.rmdir(os.path.dirname(sample_file_path))
+                    st.session_state.download_complete = False
 
             if st.button("Reset" if desired_language == "English" else "Réinitialiser"):
                 session_state_keys = st.session_state.keys()
@@ -252,27 +294,33 @@ def main():
         else:
             # Handle Image Generation and Associated Functions
             # Reminder st.session_state.generated_output is assigned to the output at this juncture. 
-            st.subheader("Generated Output:")
+            st.subheader("Sortie générée:")
             st.write(json.loads(st.session_state.generated_output)["Question"])
             
             if st.session_state.generated_images == None:
-                current_options = []
+                current_options = {}
                 # Gen Descriptions
-                for choice in ["A", "B"]: # TODO ADD C and D - A and B only for testing
-                    current_options.append(json.loads(st.session_state.generated_output)[choice])
+                for choice in ["A", "B", "C", "D"]:
+                    current_options[choice] = json.loads(st.session_state.generated_output)[choice]
                 st.session_state.generated_descriptions = current_options
                 
                 # Image Gen Here
-                with st.spinner("Generating images, thank you for your patience!"):
+                with st.spinner("Génération d'images, merci pour votre patience!"):
                     st.session_state.generated_images = generate_image(st.session_state.generated_output, desired_language)
                 st.rerun()
 
-            # 2-Image Test
-            st.image(st.session_state.generated_images[0], caption=st.session_state.generated_descriptions[0])
-            st.image(st.session_state.generated_images[1], caption=st.session_state.generated_descriptions[1])
+            st.image(st.session_state.generated_images[0], caption=f'A. {st.session_state.generated_descriptions["A"]}')
+            st.image(st.session_state.generated_images[1], caption=f'B. {st.session_state.generated_descriptions["B"]}')
+            st.image(st.session_state.generated_images[2], caption=f'C. {st.session_state.generated_descriptions["C"]}')
+            st.image(st.session_state.generated_images[3], caption=f'D. {st.session_state.generated_descriptions["D"]}')
 
             if st.button("Regenerate Images" if desired_language == "English" else "Régénérer les images"):
-                pass
+                #selected_options = st.multiselect("Select the letter(s) that correspond with the images you wish to regenerate:", list(["A", "B", "C", "D"])
+                st.session_state.output_to_modify = st.session_state.generated_output
+                st.text_input(st.session_state.output_to_modify)
+                st.session_state.regeneration_requested = True
+                st.session_state.generated_output = False
+                st.rerun()
 
             # Intention here is to target captions/descriptions only
             
@@ -286,31 +334,18 @@ def main():
             # Goal here is to generate a zip file that contains the json and image files (as png)
 
             if st.button("Export" if desired_language == "English" else "Exporter"):
-                image_paths = []
-                file_downloaded = False
-                for index, imageLink in enumerate(st.session_state.generated_images):
-                    # Download the image from the URL
-                    response = requests.get(imageLink)
-                    if response.status_code != 200:
-                        raise Exception("Failed to download the image")
-                    
-                    # Create a temporary file to save the image
-                    temp_file = tempfile.TemporaryFile(suffix=f"_choice_{index+1}.png", delete=False)
-
-                    # Write the image content to the temporary file
-                    with open(temp_file.name, "wb") as file:
-                        file.write(response.content)
-                    
-                    # Adding to List
-                    image_paths.append(temp_file.name)
+                # TODO Add Better State Management Here to avoid continuous calls. 
+                
+                image_paths = download_and_store_images(st.session_state.generated_images)
                 sample_zip = create_sample_zip(image_paths, st.session_state.generated_output)
-
+                
                 # Create the sample ZIP file
                 with open(sample_zip, "r+b") as file:
                     file_contents = file.read()
+                    # TODO: With better state management, Add a function to iterate through each file and remove the tempfile part of the name. 
                 if st.download_button(label="Download", data=file_contents, file_name="sample_files.zip", mime="application/zip"):
-                    file_downloaded = True
-                if file_downloaded:
+                    st.session_state.download_complete = True
+                if st.session_state.download_complete == True:
                     # Image Cleanup
                     for image_path in image_paths:
                         os.remove(image_path)
@@ -324,7 +359,6 @@ def main():
                 for key in session_state_keys:
                     del st.session_state[key]
                 st.rerun()
-
               
     if st.session_state.feedback_displayed:
         if st.button("Next" if desired_language == "English" else "Suivant"):
@@ -337,13 +371,24 @@ def main():
             if st.button("Submit Change Request" if desired_language == "English" else "soumettre une demande de modification"):
                 st.session_state.generated_output = st.session_state.output_to_modify
                 if st.session_state.generated_images != None:
-                    current_options = []
+                    current_options = {}
                     for choice in ["A", "B", "C", "D"]:
-                        current_options.append(json.loads(st.session_state.generated_output)[choice])
-                        st.session_state.generated_descriptions = current_options    
+                        current_options[choice] = json.loads(st.session_state.output_to_modify)[choice]
+                st.session_state.generated_descriptions = current_options   
                 st.session_state.edits_requested = False
                 st.rerun()
+    
+    if st.session_state.regeneration_requested:
+        st.image(st.session_state.generated_images[0], caption=f'A. {st.session_state.generated_descriptions["A"]}')
+        st.image(st.session_state.generated_images[1], caption=f'B. {st.session_state.generated_descriptions["B"]}')
+        st.image(st.session_state.generated_images[2], caption=f'C. {st.session_state.generated_descriptions["C"]}')
+        st.image(st.session_state.generated_images[3], caption=f'D. {st.session_state.generated_descriptions["D"]}')
+        selected_options = st.multiselect("Select options:", list(st.session_state.generated_descriptions))
+        if st.button("Demander de nouvelles image(s)"):
+            st.session_state.generated_images = regenerate_image(st.session_state.generated_images, st.session_state.generated_descriptions, selected_options, desired_language)
+            st.session_state.regeneration_requested = False
+            st.session_state.generated_output = st.session_state.output_to_modify
+            st.rerun()
         
 if __name__ == "__main__":
     main()
-
