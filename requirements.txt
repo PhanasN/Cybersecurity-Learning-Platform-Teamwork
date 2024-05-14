@@ -4,4 +4,4 @@ numpy
 openai
 requests
 Pillow
-googletrans
+googletrans==4.0.0-rc1
