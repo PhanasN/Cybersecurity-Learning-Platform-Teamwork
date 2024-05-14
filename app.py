@@ -203,7 +203,7 @@ def main():
         translate_text(
             "title": "Cybersecurity Question Generator",
             "prompt": "Enter a prompt to generate the desired output:",
-            "initial instructions": "Select your options from the left, once complete, your custom item(s) will be generated below")
+            "initial instructions": "Select your options from the left, once complete, your custom item(s) will be generated below")}
     
     desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=1)
 
