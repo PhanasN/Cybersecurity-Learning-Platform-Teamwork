@@ -238,7 +238,7 @@ def main():
         st.session_state.regeneration_requested = False
  
     if st.session_state.generated_output == None:
-        st.write(language_labels[desired_language][""initial instructions"])
+        st.write(language_labels[desired_language]["initial instructions"])
        
         if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
             complete_response = generate_question(desired_language, desired_quiz, desired_scenario, st.session_state.generated_output)
