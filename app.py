@@ -16,35 +16,32 @@ from googletrans import Translator
 api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY") 
 client = OpenAI(api_key=api_key)
 
-# Call the OpenAI API translator
+# Get translator
 def translate_text(text, target_language):
-    if isinstance(text, list):  # Check if the input is a list
+    translator = Translator()
+    if isinstance(text, list):  
         if target_language == "Français":
-            # Call the OpenAI API translator to translate the list of texts to French
-            translated_texts = [call_translation_api(single_text, "en", "fr") for single_text in text]
+            translated_texts = [translator.translate(single_text, src='en', dest='fr').text for single_text in text]
             return translated_texts
         else:
-            # Return the original list of texts for other languages
             return text
     else:
         if target_language == "Français":
-            # Call the OpenAI API translator to translate the single text to French
-            translated_text = call_translation_api(text, "en", "fr")
+            translated_text = translator.translate(text, src='en', dest='fr').text
             return translated_text
         else: 
-            # Return the original text for other languages
             return text
 
 # Defining Helper Functions
 
-def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
+def generate_question(selected_language, selected_quiz_type, selected_category, target_language):
     # TODO Add "Custom" Logic (e.g. assume they pasted in a scenario and want to be make questions based on that.) Ensure French and English match
-     promptOptionList = {
-        translate_text('Plain text multiple choice'): translate_text(f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", selected_language), 
-        translate_text('Image-based'): translate_text(f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option.", selected_language)
+    promptOptionList = {
+        translate_text('Plain text multiple choice', target_language): translate_text(f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", target_language), 
+        translate_text('Image-based', target_language): translate_text(f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option.", target_language)
     }
     systemPromptOptionList = {
-        translate_text("You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.")
+        translate_text('You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.', target_language)
     }
     if previous_response == None:
         messages = [{"role": "user", "content": promptOptionList[selected_language][selected_quiz_type]},
@@ -67,7 +64,7 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
 
     # Validation of Format Check
     validated_output = False
-    keyOptions = {translate_text("Plain text multiple choice":["Question", "A", "B", "C", "D", "Correct Answer"], "Image-based":["Question", "A", "B", "C", "D", "Incorrect Answer")]}
+    keyOptions = {translate_text("Plain text multiple choice", target_language): ["Question", "A", "B", "C", "D", "Correct Answer"], translate_text("Image-based", target_language): ["Question", "A", "B", "C", "D", "Incorrect Answer"]}
     with st.spinner(translate_text("Checking output...")):
         validation_failure = False
         keys = keyOptions[selected_language][selected_quiz_type]
@@ -89,7 +86,7 @@ def generate_image(question_options, selected_language):
   
     # TODO Update French Image Prompt
   
-    image_user_prompts = translate_text("Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: {quiz_option}")
+    image_user_prompts = translate_text("Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: ")
     
     base_user_prompt = image_user_prompts[selected_language]
     for choice in ["A", "B", "C", "D"]: 
@@ -122,10 +119,10 @@ def regenerate_image(current_images, current_descriptions, images_to_regen, curr
     return current_images
 
 def sidebar_handler(current_option, scenarioList, current_language):
-    if current_option == translate_text("Custom"):
-        desired_scenario= st.sidebar.text_area(translate_text("Enter a prompt here"))
+    if current_option == translate_text("Custom", current_language):
+        desired_scenario= st.sidebar.text_area(translate_text("Enter a prompt here", current_language))
     else:
-        desired_scenario = st.sidebar.selectbox(translate_text("Scenario to generate"),
+        desired_scenario = st.sidebar.selectbox(translate_text("Scenario to generate", current_language),
                                             options=scenarioList[current_language]['Scenarios'])
     return desired_scenario
 
@@ -198,17 +195,22 @@ def create_sample_zip(images, json_data):
 
 def main():
     language_labels = {
-        translate_text(
-            "title": "Cybersecurity Question Generator",
-            "prompt": "Enter a prompt to generate the desired output:",
-            "initial instructions": "Select your options from the left, once complete, your custom item(s) will be generated below")
+        "English": {"title": "Cybersecurity Question Generator",
+                    "prompt": "Enter a prompt to generate the desired output:",
+                    "initial instructions": "Select your options from the left, once complete, your custom item(s) will be generated below"},
+        "Français": {"title": "Générateur de questions de cybersécurité",
+                     "prompt": "Entrez une invite pour générer la sortie souhaitée :",
+                     "initial instructions": "Sélectionnez vos options sur la gauche. Une fois terminé, vos éléments personnalisés seront générés ci-dessous."}
+    }
     
     desired_language = st.sidebar.radio("Langue souhaitée", ["English", "Français"], index=1)
 
     scenarioOptionsList = {
-        'Scenarios': translate_text[("phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers"], 'Tones': ["Casual", "Professional"], 'Quiz Types': ["Plain text multiple choice", "Image-based", "Custom")]
+        'Scenarios': translate_text(["phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers"], desired_language),
+        'Tones': translate_text(["Casual", "Professional"], desired_language),
+        'Quiz Types': translate_text(["Plain text multiple choice", "Image-based", "Custom"], desired_language)
     }
-    desired_quiz = st.sidebar.selectbox(translate_text("Desired type of quiz"), options = scenarioOptionsList[desired_language]['Quiz Types'])
+    desired_quiz = st.sidebar.selectbox(translate_text("Desired type of quiz", desired_language), options=scenarioOptionsList['Quiz Types'])
     desired_scenario = sidebar_handler(desired_quiz, scenarioOptionsList, desired_language)
 
     st.title(language_labels[desired_language]["title"])
@@ -238,9 +240,9 @@ def main():
         st.session_state.regeneration_requested = False
  
     if st.session_state.generated_output == None:
-        st.write(language_labels[desired_language][""initial instructions"])
+        st.write(language_labels[desired_language]["initial instructions"])
        
-        if st.button("Générer la sortie" if desired_language == "Français" else "Generate Output"):
+        if st.button(translate_text("Generate Output", desired_language)):
             complete_response = generate_question(desired_language, desired_quiz, desired_scenario, st.session_state.generated_output)
             st.session_state.generated_output = complete_response[0]
             st.session_state.current_chat_id = complete_response[1]
@@ -253,33 +255,33 @@ def main():
 
         if desired_quiz in ["Plain text multiple choice", "Choix multiple en texte brut"]: # TODO Fix to become session state dependent - edge case around swapping choices mid-stream
             current_options = []
-            st.subheader("Sortie générée:")
+            st.subheader(translate_text("Generated Output:", desired_language))
             st.write(json.loads(st.session_state.generated_output)["Question"])
             #Add condition here for checking if image quiz or multiple choice only.
             for choice in ["A", "B", "C", "D"]:
                 current_options.append(json.loads(st.session_state.generated_output)[choice])
             # Display each choice as a selectable multiple choice item
-            user_choice = st.radio("Les choix:", options = current_options)
+            user_choice = st.radio(translate_text("Choices:", desired_language), options=current_options)
 
-            if st.button("Regenerate" if desired_language == "English" else "Régénérer"):
+            if st.button(translate_text("Regenerate", desired_language)):
                 complete_response = generate_question(desired_language, desired_quiz, desired_scenario, st.session_state.generated_output)
                 st.session_state.generated_output = complete_response[0]
                 st.rerun()
             
-            if st.button("Edit" if desired_language == "English" else "Modifier"):
+            if st.button(translate_text("Edit", desired_language)):
                 st.session_state.output_to_modify = st.session_state.generated_output
                 st.text_input(st.session_state.output_to_modify)
                 st.session_state.edits_requested = True
                 st.session_state.generated_output = False
                 st.rerun()
 
-            if st.button("Export" if desired_language == "English" else "Exporter"):
+            if st.button(translate_text("Export", desired_language)):
                 # TODO Add state management here for the generated output so the file is only created once. 
                 
                 sample_file_path = create_sample_json(st.session_state.generated_output)
-                with open(sample_file_path, "w+b") as file:
+                with open(sample_file_path, "r+b") as file:
                     file_contents = file.read()
-                if st.download_button(label="Download", data=file_contents, file_name="sample_file.json", mime="application/json"):
+                if st.download_button(label=translate_text("Download", desired_language), data=file_contents, file_name="sample_file.json", mime="application/json"):
                     st.session_state.download_complete = True
                 if st.session_state.download_complete == True:
                     # Image Cleanup
@@ -290,7 +292,7 @@ def main():
                     os.rmdir(os.path.dirname(sample_file_path))
                     st.session_state.download_complete = False
 
-            if st.button("Reset" if desired_language == "English" else "Réinitialiser"):
+            if st.button(translate_text("Reset", desired_language)):
                 session_state_keys = st.session_state.keys()
                 for key in session_state_keys:
                     del st.session_state[key]
@@ -298,7 +300,7 @@ def main():
         else:
             # Handle Image Generation and Associated Functions
             # Reminder st.session_state.generated_output is assigned to the output at this juncture. 
-            st.subheader("Sortie générée:")
+            st.subheader(translate_text("Generated Output:", desired_language))
             st.write(json.loads(st.session_state.generated_output)["Question"])
             
             if st.session_state.generated_images == None:
@@ -309,7 +311,7 @@ def main():
                 st.session_state.generated_descriptions = current_options
                 
                 # Image Gen Here
-                with st.spinner("Génération d'images, merci pour votre patience!"):
+                with st.spinner(translate_text("Generating images, thank you for your patience!", desired_language)):
                     st.session_state.generated_images = generate_image(st.session_state.generated_output, desired_language)
                 st.rerun()
 
@@ -318,7 +320,7 @@ def main():
             st.image(st.session_state.generated_images[2], caption=f'C. {st.session_state.generated_descriptions["C"]}')
             st.image(st.session_state.generated_images[3], caption=f'D. {st.session_state.generated_descriptions["D"]}')
 
-            if st.button("Regenerate Images" if desired_language == "English" else "Régénérer les images"):
+            if st.button(translate_text("Regenerate Images", desired_language)):
                 #selected_options = st.multiselect("Select the letter(s) that correspond with the images you wish to regenerate:", list(["A", "B", "C", "D"])
                 st.session_state.output_to_modify = st.session_state.generated_output
                 st.text_input(st.session_state.output_to_modify)
@@ -328,7 +330,7 @@ def main():
 
             # Intention here is to target captions/descriptions only
             
-            if st.button("Edit Captions" if desired_language == "English" else "Modifier les légendes"):
+            if st.button(translate_text("Edit Captions", desired_language)):
                 st.session_state.output_to_modify = st.session_state.generated_output
                 st.text_input(st.session_state.output_to_modify)
                 st.session_state.edits_requested = True
@@ -337,7 +339,7 @@ def main():
 
             # Goal here is to generate a zip file that contains the json and image files (as png)
 
-            if st.button("Export" if desired_language == "English" else "Exporter"):
+            if st.button(translate_text("Export", desired_language)):
                 # TODO Add Better State Management Here to avoid continuous calls. 
                 
                 image_paths = download_and_store_images(st.session_state.generated_images)
@@ -347,7 +349,7 @@ def main():
                 with open(sample_zip, "r+b") as file:
                     file_contents = file.read()
                     # TODO: With better state management, Add a function to iterate through each file and remove the tempfile part of the name. 
-                if st.download_button(label="Download", data=file_contents, file_name="sample_files.zip", mime="application/zip"):
+                if st.download_button(label=translate_text("Download", desired_language), data=file_contents, file_name="sample_files.zip", mime="application/zip"):
                     st.session_state.download_complete = True
                 if st.session_state.download_complete == True:
                     # Image Cleanup
@@ -358,41 +360,46 @@ def main():
                     os.remove(sample_zip)
                     os.rmdir(os.path.dirname(sample_zip))
 
-            if st.button("Reset" if desired_language == "English" else "Réinitialiser"):
+            if st.button(translate_text("Reset", desired_language)):
                 session_state_keys = st.session_state.keys()
                 for key in session_state_keys:
                     del st.session_state[key]
                 st.rerun()
               
     if st.session_state.feedback_displayed:
-        if st.button("Next" if desired_language == "English" else "Suivant"):
+        if st.button(translate_text("Next", desired_language)):
             st.session_state.generated_output = None
             st.session_state.feedback_displayed = False
             st.rerun()
 
     if st.session_state.edits_requested:
-            st.session_state.output_to_modify = st.text_area("The current quiz objects." if desired_language == "English" else "Les objets du quiz en cours.", st.session_state.output_to_modify)
-            if st.button("Submit Change Request" if desired_language == "English" else "soumettre une demande de modification"):
+            st.session_state.output_to_modify = st.text_area(translate_text("The current quiz objects.", desired_language), st.session_state.output_to_modify)
+            if st.button(translate_text("Submit Change Request", desired_language)):
                 st.session_state.generated_output = st.session_state.output_to_modify
                 if st.session_state.generated_images != None:
                     current_options = {}
                     for choice in ["A", "B", "C", "D"]:
-                        current_options[choice] = json.loads(st.session_state.output_to_modify)[choice]
-                st.session_state.generated_descriptions = current_options   
+                        current_options[choice] = json.loads(st.session_state.generated_output)[choice]
+                    st.session_state.generated_descriptions = current_options
+
+                    st.session_state.generated_images = regenerate_image(st.session_state.generated_images, st.session_state.generated_descriptions, st.session_state.regeneration_requested, desired_language)
+
+                    st.session_state.regeneration_requested = False
                 st.session_state.edits_requested = False
                 st.rerun()
-    
-    if st.session_state.regeneration_requested:
-        st.image(st.session_state.generated_images[0], caption=f'A. {st.session_state.generated_descriptions["A"]}')
-        st.image(st.session_state.generated_images[1], caption=f'B. {st.session_state.generated_descriptions["B"]}')
-        st.image(st.session_state.generated_images[2], caption=f'C. {st.session_state.generated_descriptions["C"]}')
-        st.image(st.session_state.generated_images[3], caption=f'D. {st.session_state.generated_descriptions["D"]}')
-        selected_options = st.multiselect("Select options:", list(st.session_state.generated_descriptions))
-        if st.button("Demander de nouvelles image(s)"):
-            st.session_state.generated_images = regenerate_image(st.session_state.generated_images, st.session_state.generated_descriptions, selected_options, desired_language)
-            st.session_state.regeneration_requested = False
-            st.session_state.generated_output = st.session_state.output_to_modify
+
+    if st.session_state.feedback_displayed == False and st.session_state.generated_output != None:
+        st.session_state.feedback_displayed = True
+        st.write("Did the system output meet your expectations?")
+
+        feedback_option = st.radio(translate_text("Feedback", desired_language), ["Yes", "No"])
+        if feedback_option == "Yes":
+            st.write("Thanks for confirming.")
+        else:
+            st.write("No worries, please enter your desired prompt below:")
+            st.session_state.generated_output = None
+            st.session_state.feedback_displayed = False
             st.rerun()
-        
+
 if __name__ == "__main__":
     main()
