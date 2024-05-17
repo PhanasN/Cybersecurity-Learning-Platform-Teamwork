@@ -20,11 +20,31 @@ client = OpenAI(api_key=api_key)
 
 def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
     promptOptionList = {
-        # TODO Add "Custom" Logic (e.g. assume they pasted in a scenario and want to be make questions based on that.) Ensure French and English match
         'English': {'Plain text multiple choice': f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", 
-                    'Image-based': f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option."},
+                    'Image-based': f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option.",
+                    'Custom': f"""Given an overview of a new cybersecurity threat to end users, generate the following items: 
+
+                    1. A small vignette that frames a way the threat may possibly appear.
+                    2. A scenario-based question relating to the vignette on what action one of the characters in the vignette, representing the end user, should take.
+                    3. Four possible answer choices relating to the vignette and question.
+
+                    Output the response in a JSON format with the following keys: 'Scenario', 'Question', 'A', 'B', 'C', 'D', 'Answer', The output must only contain one correct answer.  The 'Answer' value should correspond with the key that has the description of the correct action.
+
+                    Example threat overview: {selected_category}"""},
+                    # Add Custom Image from JSON
+
         'Français': {'Choix multiple en texte brut': f"Créez une question à choix multiples basée sur un scénario sur {selected_category} avec quatre options et une seule réponse correcte. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Bonne réponse ». Pour la touche 'Réponse correcte', la valeur doit être la lettre correspondant à l'option correcte.", 
-                    "Basé sur l'image": f"Générez une question basée sur un scénario sur {selected_category} dans laquelle l'utilisateur doit sélectionner l'action ou la réponse incorrecte parmi quatre images. Une seule description d’image doit correspondre à une action incorrecte. Toutes les autres options doivent constituer une réponse appropriée mais ne doivent pas justifier pourquoi elles sont correctes. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Réponse incorrecte ». Pour la touche « Réponse incorrecte », la valeur doit être la lettre correspondant à l'option incorrecte."}
+                    "Basé sur l'image": f"Générez une question basée sur un scénario sur {selected_category} dans laquelle l'utilisateur doit sélectionner l'action ou la réponse incorrecte parmi quatre images. Une seule description d’image doit correspondre à une action incorrecte. Toutes les autres options doivent constituer une réponse appropriée mais ne doivent pas justifier pourquoi elles sont correctes. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Réponse incorrecte ». Pour la touche « Réponse incorrecte », la valeur doit être la lettre correspondant à l'option incorrecte.",
+                    'Coutume': f"""Compte tenu d’un aperçu d’une nouvelle menace de cybersécurité pour les utilisateurs finaux, générez les éléments suivants :
+
+                    1. Une petite vignette qui décrit la façon dont la menace peut éventuellement apparaître.
+                    2. Une question basée sur un scénario relative à la vignette sur l'action que devrait entreprendre l'un des personnages de la vignette, représentant l'utilisateur final.
+                    3. Quatre choix de réponses possibles relatifs à la vignette et à la question.
+
+                    Affichez la réponse au format JSON avec les clés suivantes : "Scénario", "Question", "A", "B", "C", "D", "Réponse". La sortie ne doit contenir qu'une seule réponse correcte. La valeur « Réponse » doit correspondre à la clé qui contient la description de l'action correcte.
+
+                    Exemple de présentation des menaces : {selected_category}"""}
+                    # Add Custom Image from JSON
     }
     systemPromptOptionList = {
         'English': "You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.",
@@ -52,8 +72,8 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
 
     # Validation of Format Check
     validated_output = False
-    keyOptions = {"English":{"Plain text multiple choice":["Question", "A", "B", "C", "D", "Correct Answer"], "Image-based":["Question", "A", "B", "C", "D", "Incorrect Answer"]},
-                  "Français": {"Choix multiple en texte brut":["Question", "A", "B", "C", "D", "Bonne réponse"], "Basé sur l'image":["Question", "A", "B", "C", "D", "Réponse incorrecte"]}}
+    keyOptions = {"English":{"Plain text multiple choice":["Question", "A", "B", "C", "D", "Correct Answer"], "Image-based":["Question", "A", "B", "C", "D", "Incorrect Answer"], "Custom": ["Scenario", "Question", "A", "B", "C", "D", "Answer"]},
+                  "Français": {"Choix multiple en texte brut":["Question", "A", "B", "C", "D", "Bonne réponse"], "Basé sur l'image":["Question", "A", "B", "C", "D", "Réponse incorrecte"], "Coutume": ["Scénario", "Question", "A", "B", "C", "D", "Réponse"]}}
     with st.spinner("Checking output..."):
         validation_failure = False
         keys = keyOptions[selected_language][selected_quiz_type]
@@ -73,10 +93,8 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
 def generate_image(question_options, selected_language):
     image_links = []
   
-    # TODO Update French Image Prompt
-  
-    image_user_prompts = {"English":"Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: {quiz_option}",
-                          "Français":"Concevez une illustration de dessin animé représentant des robots experts en technologie collaborant dans un environnement de bureau d'entreprise animé, inspirée de l'action liée à l'informatique:"}
+    image_user_prompts = {"English":"Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: ",
+                          "Français": "Créez une image dans un style artistique réaliste représentant un professionnel de bureau engagé dans des tâches de base en matière de cybersécurité sur son poste de travail dans un environnement de bureau moderne. L'individu doit être représenté de manière réaliste, en utilisant une tenue professionnelle décontractée, entouré d'interfaces technologiques dynamiques mais réalistes. Ces interfaces doivent apparaître colorées et abstraites, symbolisant les outils de sécurité numérique avec lesquels le professionnel interagit, mais rester plausibles sans aucun texte lisible. Cette scène doit capturer visuellement l'attention et l'interaction d'un employé de bureau ordinaire naviguant dans les protocoles de cybersécurité. Cette image doit capturer visuellement l’essence de l’action suivante: "}
     
     base_user_prompt = image_user_prompts[selected_language]
     for choice in ["A", "B", "C", "D"]: 
@@ -94,7 +112,7 @@ def generate_image(question_options, selected_language):
 def regenerate_image(current_images, current_descriptions, images_to_regen, current_language):
     mapping = {"A": 0, "B": 1, "C": 2, "D": 3}
     image_user_prompts = {"English":"Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: ",
-                          "Français":"Concevez une illustration de dessin animé représentant des robots experts en technologie collaborant dans un environnement de bureau d'entreprise animé, inspirée de l'action liée à l'informatique:"}
+                          "Français":"Créez une image dans un style artistique réaliste représentant un professionnel de bureau engagé dans des tâches de base en matière de cybersécurité sur son poste de travail dans un environnement de bureau moderne. L'individu doit être représenté de manière réaliste, en utilisant une tenue professionnelle décontractée, entouré d'interfaces technologiques dynamiques mais réalistes. Ces interfaces doivent apparaître colorées et abstraites, symbolisant les outils de sécurité numérique avec lesquels le professionnel interagit, mais rester plausibles sans aucun texte lisible. Cette scène doit capturer visuellement l'attention et l'interaction d'un employé de bureau ordinaire naviguant dans les protocoles de cybersécurité. Cette image doit capturer visuellement l’essence de l’action suivante: "}
     base_user_prompt = image_user_prompts[current_language]
     with st.spinner("Regenerating images, thank you for your patience..."):
         for i, image in enumerate(images_to_regen):
@@ -153,8 +171,6 @@ def create_sample_json(json_data):
 
     # The file will persist after closing the block, so it can be accessed later
     return file_path
-
-# TODO Make this the primary function so that the one above is gone.
     
 def create_sample_zip(images, json_data):
     # Create a named temporary file for JSON with automatic deletion
@@ -164,11 +180,13 @@ def create_sample_zip(images, json_data):
 
     # Create a temporary directory to hold the images and JSON file
     with tempfile.TemporaryDirectory() as temp_dir:
+        if images != None:
         # Copy image files to the temporary directory
-        for image_path in images:
-            shutil.copy(image_path, temp_dir)
+            for image_path in images:
+                shutil.copy(image_path, temp_dir)
         # Copy JSON file to the temporary directory
-        shutil.copy(temp_json_path, temp_dir)
+        if temp_json_path != None:
+            shutil.copy(temp_json_path, temp_dir)
 
         # Zip the directory
         zip_file_path = "sample_files.zip"
@@ -180,7 +198,11 @@ def create_sample_zip(images, json_data):
                     zipf.write(file_path, arc_name)
 
     # Clean up the temporary JSON file explicitly
-    os.remove(temp_json_path)
+    if temp_json_path != None:
+        os.remove(temp_json_path)
+    if images != None:
+        for image_path in images:
+            os.remove(image_path)
 
     return zip_file_path
 
@@ -208,30 +230,17 @@ def main():
     desired_scenario = sidebar_handler(desired_quiz, scenarioOptionsList, desired_language)
 
     st.title(language_labels[desired_language]["title"])
-
-    # TODO The below state initialization can be collapsed into 4 lines, based on lists and creating new st.session_state[key] = initial_state calls
                                       
-    # Initialize session state variables if they don't exist
-    if "generated_output" not in st.session_state:
-        st.session_state.generated_output = None
-    if "feedback_displayed" not in st.session_state:
-        st.session_state.feedback_displayed = False
-    if "edits_requested" not in st.session_state:
-        st.session_state.edits_requested = False
-    if "output_to_modify" not in st.session_state:
-        st.session_state.output_to_modify = None
-    if "current_chat_id" not in st.session_state:
-        st.session_state.current_chat_id = None
-    if "generated_images" not in st.session_state:
-        st.session_state.generated_images = None
-    if "generated_descriptions" not in st.session_state:
-        st.session_state.generated_descriptions = None
-    if "export_generated" not in st.session_state:
-        st.session_state.export_generated = None
-    if "download_complete" not in st.session_state:
-        st.session_state.download_complete = False
-    if "regeneration_requested" not in st.session_state:
-        st.session_state.regeneration_requested = False
+    storage_states = ["generated_output", "output_to_modify", "current_chat_id", "generated_images", "generated_descriptions", "export_generated"]
+    flag_states = ["feedback_displayed", "edits_requested", "download_complete", "regeneration_requested"]
+    
+    for i, item in enumerate(storage_states):
+        if item not in st.session_state:
+            st.session_state[item] = None
+
+    for i, item in enumerate(flag_states):
+        if item not in st.session_state:
+            st.session_state[item] = False
  
     if st.session_state.generated_output == None:
         st.write(language_labels[desired_language]["initial instructions"])
@@ -246,12 +255,15 @@ def main():
     if st.session_state.generated_output:
 
         # TODO Refactor into a generic function that is called based on current state, dictated by language + quiz_type. Sidepanel should disappear after first generation to avoid cross-language issues. 
+        
+        # Output Display(desired_quiz, desired_language)
+        # st.sidebar.clear()
 
-        if desired_quiz in ["Plain text multiple choice", "Choix multiple en texte brut"]: # TODO Fix to become session state dependent - edge case around swapping choices mid-stream
+        if desired_quiz in ["Plain text multiple choice", "Choix multiple en texte brut", "Coutume", "Custom"]: # TODO Fix to become session state dependent - edge case around swapping choices mid-stream
             current_options = []
             st.subheader("Sortie générée:")
             st.write(json.loads(st.session_state.generated_output)["Question"])
-            #Add condition here for checking if image quiz or multiple choice only.
+            
             for choice in ["A", "B", "C", "D"]:
                 current_options.append(json.loads(st.session_state.generated_output)[choice])
             # Display each choice as a selectable multiple choice item
@@ -278,9 +290,6 @@ def main():
                 if st.download_button(label="Download", data=file_contents, file_name="sample_file.json", mime="application/json"):
                     st.session_state.download_complete = True
                 if st.session_state.download_complete == True:
-                    # Image Cleanup
-                    for image_path in image_paths:
-                        os.remove(image_path)
                     # Clean up: Delete the temporary directory and its contents
                     os.remove(sample_file_path)
                     os.rmdir(os.path.dirname(sample_file_path))
@@ -315,7 +324,6 @@ def main():
             st.image(st.session_state.generated_images[3], caption=f'D. {st.session_state.generated_descriptions["D"]}')
 
             if st.button("Regenerate Images" if desired_language == "English" else "Régénérer les images"):
-                #selected_options = st.multiselect("Select the letter(s) that correspond with the images you wish to regenerate:", list(["A", "B", "C", "D"])
                 st.session_state.output_to_modify = st.session_state.generated_output
                 st.text_input(st.session_state.output_to_modify)
                 st.session_state.regeneration_requested = True
@@ -359,12 +367,6 @@ def main():
                 for key in session_state_keys:
                     del st.session_state[key]
                 st.rerun()
-              
-    if st.session_state.feedback_displayed:
-        if st.button("Next" if desired_language == "English" else "Suivant"):
-            st.session_state.generated_output = None
-            st.session_state.feedback_displayed = False
-            st.rerun()
 
     if st.session_state.edits_requested:
             st.session_state.output_to_modify = st.text_area("The current quiz objects." if desired_language == "English" else "Les objets du quiz en cours.", st.session_state.output_to_modify)
@@ -384,7 +386,7 @@ def main():
         st.image(st.session_state.generated_images[2], caption=f'C. {st.session_state.generated_descriptions["C"]}')
         st.image(st.session_state.generated_images[3], caption=f'D. {st.session_state.generated_descriptions["D"]}')
         selected_options = st.multiselect("Select options:", list(st.session_state.generated_descriptions))
-        if st.button("Demander de nouvelles image(s)"):
+        if st.button("Select Images to Regenerate" if desired_language == "English" else "Demander de nouvelles image(s)"):
             st.session_state.generated_images = regenerate_image(st.session_state.generated_images, st.session_state.generated_descriptions, selected_options, desired_language)
             st.session_state.regeneration_requested = False
             st.session_state.generated_output = st.session_state.output_to_modify
