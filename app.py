@@ -236,7 +236,7 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
 
                     Output the response in a JSON format with the following keys: 'Scenario', 'Question', 'A', 'B', 'C', 'D', 'Answer'. The output must only contain one correct answer. The 'Answer' value should correspond with the key that has the description of the correct action.
 
-                    Example threat overview: {selected_category}"""},
+                    Use the following description to generate the scenario and quiz: {selected_category}"""},
         'Français': {'Choix multiple en texte brut': f"Créez une question à choix multiples basée sur un scénario sur {selected_category} avec quatre options et une seule réponse correcte. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Bonne réponse ». Pour la touche 'Réponse correcte', la valeur doit être la lettre correspondant à l'option correcte.", 
                     "Basé sur l'image": f"Générez une question basée sur un scénario sur {selected_category} dans laquelle l'utilisateur doit sélectionner l'action ou la réponse incorrecte parmi quatre images. Une seule description d’image doit correspondre à une action incorrecte. Toutes les autres options doivent constituer une réponse appropriée mais ne doivent pas justifier pourquoi elles sont correctes. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Réponse incorrecte ». Pour la touche « Réponse incorrecte », la valeur doit être la lettre correspondant à l'option incorrecte.",
                     'Coutume': f"""Compte tenu d’un aperçu d’une nouvelle menace de cybersécurité pour les utilisateurs finaux, générez les éléments suivants :
@@ -247,7 +247,7 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
 
                     Affichez la réponse au format JSON avec les clés suivantes : "Scénario", "Question", "A", "B", "C", "D", "Réponse". La sortie ne doit contenir qu'une seule réponse correcte. La valeur « Réponse » doit correspondre à la clé qui contient la description de l'action correcte.
 
-                    Exemple de présentation des menaces : {selected_category}"""}
+                     Affichez la réponse au format JSON avec les clés suivantes : {selected_category}"""}
     }
     systemPromptOptionList = {
         'English': "You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.",
