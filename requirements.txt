@@ -5,3 +5,8 @@ openai
 requests
 Pillow
 Time
+os
+tempfile
+zipfile
+jsons
+shutil
