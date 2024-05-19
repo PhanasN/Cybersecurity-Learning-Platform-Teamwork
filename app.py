@@ -3,18 +3,15 @@ from openai import OpenAI
 import os
 from PIL import Image
 import json
-import os
 import shutil
 from zipfile import ZipFile
 import tempfile
 from time import sleep
 import requests
-from io import BytesIO
 
 # General Housekeeping
 api_key = os.getenv("Company_Project_API_Key") 
 client = OpenAI(api_key=api_key)
-
 
 def main():
     language_labels = {
@@ -56,14 +53,13 @@ def main():
         if st.button("Générer la sortie" if st.session_state.desired_language == "Français" else "Generate Output"):
             generate_and_store_output(st.session_state.desired_language, st.session_state.desired_quiz, st.session_state.desired_scenario)
     else:
-        st.write(st.session_state.generated_output) #Debug
-        if st.session_state.edits_requested == True:
+        st.write(st.session_state.generated_output) # Debug
+        if st.session_state.edits_requested:
             handle_edits(st.session_state.desired_language)
-        elif st.session_state.regeneration_requested == True:
+        elif st.session_state.regeneration_requested:
             handle_regeneration(st.session_state.desired_quiz, st.session_state.desired_language)
         else:
             display_output(st.session_state.desired_quiz, st.session_state.desired_language)
-        
 
 def initialize_session_state():
     storage_states = ["generated_output", "output_to_modify", "current_chat_id", "generated_images", "generated_descriptions", "export_generated"]
@@ -77,14 +73,93 @@ def initialize_session_state():
         if item not in st.session_state:
             st.session_state[item] = False
 
+def fetch_data_with_retry(client, messages, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=messages,
+                temperature=0.1,
+                response_format={"type": "json_object"},
+            )
+            return response
+        except openai.error.RateLimitError:
+            wait_time = 2 ** attempt  # Exponential backoff
+            time.sleep(wait_time)
+    raise Exception("Exceeded maximum retries")
+
 def generate_and_store_output(language, quiz, scenario):
     complete_response = generate_question(language, quiz, scenario, st.session_state.generated_output)
     st.session_state.generated_output = complete_response[0]
     st.session_state.current_chat_id = complete_response[1]
     st.session_state.feedback_displayed = False
-    if st.session_state.regeneration_requested == True:
+    if st.session_state.regeneration_requested:
         st.session_state.regeneration_requested = False
     st.rerun()
+
+def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
+    promptOptionList = {
+        'English': {'Plain text multiple choice': f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", 
+                    'Image-based': f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option.",
+                    'Custom': f"""Given an overview of a new cybersecurity threat to end users, generate the following items: 
+
+                    1. A small vignette that frames a way the threat may possibly appear.
+                    2. A scenario-based question relating to the vignette on what action one of the characters in the vignette, representing the end user, should take.
+                    3. Four possible answer choices relating to the vignette and question.
+
+                    Output the response in a JSON format with the following keys: 'Scenario', 'Question', 'A', 'B', 'C', 'D', 'Answer'. The output must only contain one correct answer. The 'Answer' value should correspond with the key that has the description of the correct action.
+
+                    Example threat overview: {selected_category}"""},
+        'Français': {'Choix multiple en texte brut': f"Créez une question à choix multiples basée sur un scénario sur {selected_category} avec quatre options et une seule réponse correcte. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Bonne réponse ». Pour la touche 'Réponse correcte', la valeur doit être la lettre correspondant à l'option correcte.", 
+                    "Basé sur l'image": f"Générez une question basée sur un scénario sur {selected_category} dans laquelle l'utilisateur doit sélectionner l'action ou la réponse incorrecte parmi quatre images. Une seule description d’image doit correspondre à une action incorrecte. Toutes les autres options doivent constituer une réponse appropriée mais ne doivent pas justifier pourquoi elles sont correctes. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Réponse incorrecte ». Pour la touche « Réponse incorrecte », la valeur doit être la lettre correspondant à l'option incorrecte.",
+                    'Coutume': f"""Compte tenu d’un aperçu d’une nouvelle menace de cybersécurité pour les utilisateurs finaux, générez les éléments suivants :
+
+                    1. Une petite vignette qui décrit la façon dont la menace peut éventuellement apparaître.
+                    2. Une question basée sur un scénario relative à la vignette sur l'action que devrait entreprendre l'un des personnages de la vignette, représentant l'utilisateur final.
+                    3. Quatre choix de réponses possibles relatifs à la vignette et à la question.
+
+                    Affichez la réponse au format JSON avec les clés suivantes : "Scénario", "Question", "A", "B", "C", "D", "Réponse". La sortie ne doit contenir qu'une seule réponse correcte. La valeur « Réponse » doit correspondre à la clé qui contient la description de l'action correcte.
+
+                    Exemple de présentation des menaces : {selected_category}"""}
+    }
+    systemPromptOptionList = {
+        'English': "You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.",
+        'Français': "Vous êtes un expert en cybersécurité informatique et spécialisé dans la création de contenu utile destiné aux utilisateurs finaux. Lors de la création de contenu, ne répétez pas les exemples précédents."
+    }
+    if previous_response is None:
+        messages = [{"role": "user", "content": promptOptionList[selected_language][selected_quiz_type]},
+                    {"role": "system", "content": systemPromptOptionList[selected_language]}]
+    else:
+        extra_context = {
+            'English': f"Your previous response was {previous_response}",
+            'Français': f"Votre réponse précédente était: {previous_response}"
+        }
+        content = promptOptionList[selected_language][selected_quiz_type] + extra_context[selected_language]
+        messages = [{"role": "user", "content": content},
+                    {"role": "system", "content": systemPromptOptionList[selected_language]}]
+        
+    with st.spinner("Generating content..."):
+        response = fetch_data_with_retry(client, messages)
+
+    # Validation of Format Check
+    validated_output = False
+    keyOptions = {"English":{"Plain text multiple choice":["Question", "A", "B", "C", "D", "Correct Answer"], "Image-based":["Question", "A", "B", "C", "D", "Incorrect Answer"], "Custom": ["Scenario", "Question", "A", "B", "C", "D", "Answer"]},
+                  "Français": {"Choix multiple en texte brut":["Question", "A", "B", "C", "D", "Bonne réponse"], "Basé sur l'image":["Question", "A", "B", "C", "D", "Réponse incorrecte"], "Coutume": ["Scénario", "Question", "A", "B", "C", "D", "Réponse"]}}
+    with st.spinner("Checking output..."):
+        validation_failure = False
+        keys = keyOptions[selected_language][selected_quiz_type]
+        while not validated_output:
+            test_dict = json.loads(response.choices[0].message.content.strip())
+            for key in keys:
+                if key not in test_dict:
+                    st.error("Invalid Format Detected, regenerating.")
+                    validation_failure = True
+                    break 
+            if not validation_failure:
+                st.success("Format validated!")
+                sleep(2)
+                validated_output = True
+    return [response.choices[0].message.content.strip(), response.id]
 
 def display_output(quiz, language):
     if quiz in ["Plain text multiple choice", "Choix multiple en texte brut", "Coutume", "Custom"]:
@@ -210,75 +285,6 @@ def handle_image_regeneration(language):
 
 # Helper functions
 
-def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
-    promptOptionList = {
-        'English': {'Plain text multiple choice': f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", 
-                    'Image-based': f"Generate a scenario-based question about {selected_category} where the user must select the incorrect action or response from four images. Only one image description should correspond with an incorrect action. All other options should be an appropriate response but not provide justification as to why they are correct. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Incorrect Answer'. For the 'Incorrect Answer' key, the value should be the letter corresponding to the incorrect option.",
-                    'Custom': f"""Given an overview of a new cybersecurity threat to end users, generate the following items: 
-
-                    1. A small vignette that frames a way the threat may possibly appear.
-                    2. A scenario-based question relating to the vignette on what action one of the characters in the vignette, representing the end user, should take.
-                    3. Four possible answer choices relating to the vignette and question.
-
-                    Output the response in a JSON format with the following keys: 'Scenario', 'Question', 'A', 'B', 'C', 'D', 'Answer'. The output must only contain one correct answer. The 'Answer' value should correspond with the key that has the description of the correct action.
-
-                    Example threat overview: {selected_category}"""},
-        'Français': {'Choix multiple en texte brut': f"Créez une question à choix multiples basée sur un scénario sur {selected_category} avec quatre options et une seule réponse correcte. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Bonne réponse ». Pour la touche 'Réponse correcte', la valeur doit être la lettre correspondant à l'option correcte.", 
-                    "Basé sur l'image": f"Générez une question basée sur un scénario sur {selected_category} dans laquelle l'utilisateur doit sélectionner l'action ou la réponse incorrecte parmi quatre images. Une seule description d’image doit correspondre à une action incorrecte. Toutes les autres options doivent constituer une réponse appropriée mais ne doivent pas justifier pourquoi elles sont correctes. Formatez votre sortie sous forme de réponse JSON avec les clés suivantes : « Question », « A », « B », « C », « D », « Réponse incorrecte ». Pour la touche « Réponse incorrecte », la valeur doit être la lettre correspondant à l'option incorrecte.",
-                    'Coutume': f"""Compte tenu d’un aperçu d’une nouvelle menace de cybersécurité pour les utilisateurs finaux, générez les éléments suivants :
-
-                    1. Une petite vignette qui décrit la façon dont la menace peut éventuellement apparaître.
-                    2. Une question basée sur un scénario relative à la vignette sur l'action que devrait entreprendre l'un des personnages de la vignette, représentant l'utilisateur final.
-                    3. Quatre choix de réponses possibles relatifs à la vignette et à la question.
-
-                    Affichez la réponse au format JSON avec les clés suivantes : "Scénario", "Question", "A", "B", "C", "D", "Réponse". La sortie ne doit contenir qu'une seule réponse correcte. La valeur « Réponse » doit correspondre à la clé qui contient la description de l'action correcte.
-
-                    Exemple de présentation des menaces : {selected_category}"""}
-    }
-    systemPromptOptionList = {
-        'English': "You are an expert in IT cybersecurity and specialize in creating helpful content aimed at end users. When creating content, do not repeat previous examples.",
-        'Français': "Vous êtes un expert en cybersécurité informatique et spécialisé dans la création de contenu utile destiné aux utilisateurs finaux. Lors de la création de contenu, ne répétez pas les exemples précédents."
-    }
-    if previous_response == None:
-        messages = [{"role": "user", "content": promptOptionList[selected_language][selected_quiz_type]},
-                    {"role": "system", "content": systemPromptOptionList[selected_language]}]
-    else:
-        extra_context = {
-            'English': f"Your previous response was {previous_response}",
-            'Français': f"Votre réponse précédente était: {previous_response}"
-        }
-        content = promptOptionList[selected_language][selected_quiz_type] + extra_context[selected_language]
-        messages = [{"role": "user", "content": promptOptionList[selected_language][selected_quiz_type]},
-                    {"role": "system", "content": content}]
-        
-    with st.spinner("Generating content..."):
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            temperature = 0.1,
-            response_format={"type": "json_object"},
-        )
-
-    # Validation of Format Check
-    validated_output = False
-    keyOptions = {"English":{"Plain text multiple choice":["Question", "A", "B", "C", "D", "Correct Answer"], "Image-based":["Question", "A", "B", "C", "D", "Incorrect Answer"], "Custom": ["Scenario", "Question", "A", "B", "C", "D", "Answer"]},
-                  "Français": {"Choix multiple en texte brut":["Question", "A", "B", "C", "D", "Bonne réponse"], "Basé sur l'image":["Question", "A", "B", "C", "D", "Réponse incorrecte"], "Coutume": ["Scénario", "Question", "A", "B", "C", "D", "Réponse"]}}
-    with st.spinner("Checking output..."):
-        validation_failure = False
-        keys = keyOptions[selected_language][selected_quiz_type]
-        while not validated_output:
-            test_dict = json.loads(response.choices[0].message.content.strip())
-            for key in keys:
-                if key not in test_dict:
-                    st.error("Invalid Format Detected, regenerating.")
-                    validation_failure = True
-                    break 
-            if not validation_failure:
-                st.success("Format validated!")
-                sleep(2)
-                validated_output = True
-    return [response.choices[0].message.content.strip(), response.id]
-
 def generate_image(question_options, selected_language):
     image_links = []
   
@@ -318,10 +324,10 @@ def regenerate_image(current_images, current_descriptions, images_to_regen, curr
 
 def sidebar_handler(current_option, scenarioList, current_language):
     if current_option == "Custom" or current_option == "Coutume":
-        desired_scenario= st.sidebar.text_area("Enter a prompt here")
+        desired_scenario = st.sidebar.text_area("Enter a prompt here")
     else:
         desired_scenario = st.sidebar.selectbox("Scénario informatique à générer",
-                                            options=scenarioList[current_language]['Scenarios'])
+                                                options=scenarioList[current_language]['Scenarios'])
     return desired_scenario
 
 def download_and_store_images(image_links):
@@ -358,12 +364,12 @@ def create_sample_zip(images, json_data):
 
     # Create a temporary directory to hold the images and JSON file
     with tempfile.TemporaryDirectory() as temp_dir:
-        if images != None:
+        if images is not None:
         # Copy image files to the temporary directory
             for image_path in images:
                 shutil.copy(image_path, temp_dir)
         # Copy JSON file to the temporary directory
-        if temp_json_path != None:
+        if temp_json_path is not None:
             shutil.copy(temp_json_path, temp_dir)
 
         # Zip the directory
@@ -376,9 +382,9 @@ def create_sample_zip(images, json_data):
                     zipf.write(file_path, arc_name)
 
     # Clean up the temporary JSON file explicitly
-    if temp_json_path != None:
+    if temp_json_path is not None:
         os.remove(temp_json_path)
-    if images != None:
+    if images is not None:
         for image_path in images:
             os.remove(image_path)
 
