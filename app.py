@@ -1,3 +1,4 @@
+# Importing necessary libraries
 import streamlit as st
 from openai import OpenAI
 import os
@@ -12,11 +13,12 @@ import requests
 from io import BytesIO
 
 # General Housekeeping
-api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY") 
-client = OpenAI(api_key=api_key)
+api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY") # Retrieve the OpenAI API key from environment variables
+client = OpenAI(api_key=api_key) # Initialize the OpenAI client
 
 
 def main():
+    # Language labels for English and French
     language_labels = {
         "English": {
             "title": "Cybersecurity Question Generator",
@@ -29,7 +31,7 @@ def main():
             "initial instructions": "Sélectionnez vos options à gauche, une fois terminé, vos articles personnalisés seront générés ci-dessous"
         }
     }
-
+    # Options for scenarios, tones, and quiz types in English and French
     scenarioOptionsList = {
         'English': {
             'Scenarios': ["phishing attacks", "spear phishing", "social engineering", "ransomware", "CEO fraud", "baiting", "Wi-Fi eavesdropping", "website spoofing", "password reuse", "insider threats", "outdated software", "convincing contractors", "helpful hackers"],
@@ -42,7 +44,7 @@ def main():
             'Quiz Types': ["Choix multiple en texte brut", "Basé sur l'image", "Coutume"]
         }
     }
-
+    # Initialize session state variables
     initialize_session_state()
 
     if st.session_state.generated_output is None:
@@ -64,7 +66,7 @@ def main():
         else:
             display_output(st.session_state.desired_quiz, st.session_state.desired_language)
         
-
+# Function to initialize session state variables
 def initialize_session_state():
     storage_states = ["generated_output", "output_to_modify", "current_chat_id", "generated_images", "generated_descriptions", "export_generated"]
     flag_states = ["feedback_displayed", "edits_requested", "download_complete", "regeneration_requested"]
@@ -76,7 +78,8 @@ def initialize_session_state():
     for item in flag_states:
         if item not in st.session_state:
             st.session_state[item] = False
-
+            
+# Function to generate and store the output based on user inputs
 def generate_and_store_output(language, quiz, scenario):
     complete_response = generate_question(language, quiz, scenario, st.session_state.generated_output)
     st.session_state.generated_output = complete_response[0]
@@ -85,13 +88,15 @@ def generate_and_store_output(language, quiz, scenario):
     if st.session_state.regeneration_requested == True:
         st.session_state.regeneration_requested = False
     st.rerun()
-
+    
+# Function to display the output based on the selected quiz type
 def display_output(quiz, language):
     if quiz in ["Plain text multiple choice", "Choix multiple en texte brut", "Coutume", "Custom"]:
         display_text_output(language)
     elif quiz == "Image-based" or quiz == "Basé sur l'image":
         display_image_output(language)
 
+# Function to display text output
 def display_text_output(language):
     st.subheader("Sortie générée:")
     if st.session_state.desired_quiz in ["Coutume", "Custom"]:
@@ -106,6 +111,7 @@ def display_text_output(language):
 
     handle_common_buttons(language, is_image_output=False)
 
+# Function to display image output
 def display_image_output(language):
     st.subheader("Sortie générée:")
     st.write(json.loads(st.session_state.generated_output)["Question"])
@@ -118,6 +124,7 @@ def display_image_output(language):
 
     handle_common_buttons(language, is_image_output=True)
 
+# Function to generate images based on question options
 def generate_images(language):
     current_options = {choice: json.loads(st.session_state.generated_output)[choice] for choice in ["A", "B", "C", "D"]}
     st.session_state.generated_descriptions = current_options
@@ -126,6 +133,7 @@ def generate_images(language):
         st.session_state.generated_images = generate_image(st.session_state.generated_output, language)
     st.rerun()
 
+# Function to handle common buttons for various operations
 def handle_common_buttons(language, is_image_output):
     if st.button("Regenerate" if language == "English" else "Régénérer"):
         st.session_state.output_to_modify = st.session_state.generated_output
@@ -146,6 +154,7 @@ def handle_common_buttons(language, is_image_output):
         reset_session_state()
         st.rerun()
 
+# Function to export the generated output
 def export_output(is_image_output):
     if is_image_output:
         image_paths = download_and_store_images(st.session_state.generated_images)
@@ -158,6 +167,7 @@ def export_output(is_image_output):
     if st.download_button(label="Download", data=file_contents, file_name="sample_files.zip", mime="application/zip"):
         cleanup_files(sample_zip, image_paths if is_image_output else None)
 
+# Function to clean up temporary files
 def cleanup_files(sample_zip, image_paths=None):
     if image_paths:
         for image_path in image_paths:
@@ -165,10 +175,12 @@ def cleanup_files(sample_zip, image_paths=None):
     os.remove(sample_zip)
     os.rmdir(os.path.dirname(sample_zip))
 
+# Function to reset the session state
 def reset_session_state():
     for key in list(st.session_state.keys()):
         del st.session_state[key]
 
+# Function to handle edits to the generated output
 def handle_edits(language):
     st.session_state.output_to_modify = st.text_area("The current quiz objects." if language == "English" else "Les objets du quiz en cours.", st.session_state.output_to_modify)
     if st.button("Submit Change Request" if language == "English" else "soumettre une demande de modification"):
@@ -178,6 +190,7 @@ def handle_edits(language):
         st.session_state.edits_requested = False
         st.rerun()
 
+# Function to handle regeneration of the output
 def handle_regeneration(quiz, language):
     if quiz == "Image-based" or quiz == "Basé sur l'image":
         handle_image_regeneration(language)
@@ -193,6 +206,7 @@ def handle_text_regeneration(language):
 
     generate_and_store_output(language, st.session_state.desired_quiz, st.session_state.desired_scenario)
 
+# Function to handle regeneration of image output
 def handle_image_regeneration(language):
     if st.session_state.generated_images:
         for index, choice in enumerate(["A", "B", "C", "D"]):
@@ -210,6 +224,7 @@ def handle_image_regeneration(language):
 
 # Helper functions
 
+# Function to generate a question based on the selected options
 def generate_question(selected_language, selected_quiz_type, selected_category, previous_response):
     promptOptionList = {
         'English': {'Plain text multiple choice': f"Create a scenario-based multiple choice question about {selected_category} with four options and one correct answer. Format your output as a JSON response with the following keys: 'Question', 'A', 'B', 'C', 'D', 'Correct Answer'. For the 'Correct Answer' key, the value should be the letter corresponding to the correct option.", 
@@ -279,6 +294,7 @@ def generate_question(selected_language, selected_quiz_type, selected_category, 
                 validated_output = True
     return [response.choices[0].message.content.strip(), response.id]
 
+# Function to generate images based on question options
 def generate_image(question_options, selected_language):
     image_links = []
   
@@ -298,6 +314,7 @@ def generate_image(question_options, selected_language):
         image_links.append(response.data[0].url)
     return image_links
 
+# Function to regenerate specific images
 def regenerate_image(current_images, current_descriptions, images_to_regen, current_language):
     mapping = {"A": 0, "B": 1, "C": 2, "D": 3}
     image_user_prompts = {"English":"Create an image in a realistic art style depicting an office professional engaged in basic cyber security tasks at their workstation in a modern office environment. The individual should be portrayed realistically, using a business-casual attire, surrounded by vibrant but realistic technology interfaces. These interfaces should appear colorful and abstract, symbolizing the digital security tools the professional is interacting with, but remain plausible without any readable text. This scene should visually capture the focus and interaction of a regular office worker navigating cybersecurity protocols. This image should visually capture the esssence of the following action: ",
@@ -316,6 +333,7 @@ def regenerate_image(current_images, current_descriptions, images_to_regen, curr
     
     return current_images
 
+# Function to handle sidebar inputs
 def sidebar_handler(current_option, scenarioList, current_language):
     if current_option == "Custom" or current_option == "Coutume":
         desired_scenario= st.sidebar.text_area("Enter a prompt here")
@@ -324,6 +342,7 @@ def sidebar_handler(current_option, scenarioList, current_language):
                                             options=scenarioList[current_language]['Scenarios'])
     return desired_scenario
 
+# Function to download and store images locally
 def download_and_store_images(image_links):
     image_paths = []
     for index, image_link in enumerate(image_links):
@@ -349,7 +368,8 @@ def download_and_store_images(image_links):
             continue
 
     return image_paths
-    
+
+# Function to create a ZIP file containing images and JSON data
 def create_sample_zip(images, json_data):
     # Create a named temporary file for JSON with automatic deletion
     with tempfile.NamedTemporaryFile(mode='w+', suffix="_question_answers.json", delete=False) as temp_json_file:
@@ -384,5 +404,6 @@ def create_sample_zip(images, json_data):
 
     return zip_file_path
 
+# Run the main function
 if __name__ == "__main__":
     main()
