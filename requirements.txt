@@ -4,4 +4,3 @@ numpy
 openai
 requests
 Pillow
-os
