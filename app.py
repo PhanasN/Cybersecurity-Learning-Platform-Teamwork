@@ -1,3 +1,4 @@
+import streamlit as st
 from openai import OpenAI
 import os
 from PIL import Image
@@ -11,7 +12,7 @@ import requests
 from io import BytesIO
 
 # General Housekeeping
-api_key = os.getenv("Company_Project_API_Key") 
+api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY") 
 client = OpenAI(api_key=api_key)
 
 
