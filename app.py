@@ -12,7 +12,7 @@ import requests
 from io import BytesIO
 
 # General Housekeeping
-api_key = os.getenv("CYBERSECURITY_OPENAI_API_KEY") 
+api_key = os.getenv("Company_Project_API_Key") 
 client = OpenAI(api_key=api_key)
 
 
