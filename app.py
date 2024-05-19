@@ -4,7 +4,6 @@ from openai import OpenAI
 import os
 from PIL import Image
 import json
-import os
 import shutil
 from zipfile import ZipFile
 import tempfile
